@@ -1,0 +1,8 @@
+# Polyrun::Coverage::Rails — loaded from spec/spec_helper via Polyrun::Coverage::Rails.start!
+
+track_under:
+  - lib
+reject_patterns:
+  - "/lib/partition_gardener/version.rb"
+  - "/lib/partition_gardener/rails.rb"
+minimum_line_percent: 85

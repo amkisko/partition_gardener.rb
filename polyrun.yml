@@ -1,0 +1,26 @@
+version: 1
+
+hooks:
+  before_suite:
+    - bundle exec rubocop
+    - bundle exec rbs validate
+
+# Polyrun — shard env + spec list. spec/spec_paths.txt is written from paths_build before plan/run-shards.
+
+partition:
+  suite: rspec
+  paths_file: spec/spec_paths.txt
+  shard_total: 5
+  paths_build:
+    all_glob: spec/**/*_spec.rb
+    stages:
+      - glob: spec/integration/**/*_spec.rb
+        sort_by_substring_order:
+          - sliding_window_maintenance
+          - premake_monthly
+          - rebalance_resume
+          - advisory_lock
+          - executor_move
+          - composite_maintenance
+          - hot_switch
+        default_priority: 5
