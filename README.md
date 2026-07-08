@@ -101,56 +101,41 @@ PartitionGardener::ConfigDocument.load_registry_file!("config/partition_garden.j
 PartitionGardener.run!
 ```
 
-## Recommended approach
+## Default layout
 
 Default layout: monthly sliding window (`register_template :sliding_window_monthly` in the Rails example above). Three-area layout with planner-enforced non-overlapping ranges, default drained last, and keyset moves on `(partition_key, conflict_key)`.
 
-When you are unsure which template fits, `suggest_template` infers one from partition key column names and returns a draft config plus warnings:
-
-```ruby
-result = PartitionGardener.suggest_template(
-  table_name: "events",
-  partition_key_column: "occurred_on",
-  conflict_key: %w[id occurred_on]
-)
-# => { template: :sliding_window_monthly, config: { ... }, warnings: [], reliability: :recommended }
-
-PartitionGardener::Registry.register(result[:config])
-```
-
-`PartitionGardener.recommend` is an alias for `suggest_template`.
-
-Legacy or experimental layouts remain available for composite trees and migrations but log a reliability warning on register.
+See [docs/decision_flow.md](docs/decision_flow.md) for when to pick other templates.
 
 ## Templates
 
-`Templates.sliding_window_monthly` (recommended, layout `:sliding_window`, bucket `:month`) — `RANGE (date)` monthly time-series.
+`Templates.sliding_window_monthly` (layout `:sliding_window`, bucket `:month`) — `RANGE (date)` monthly time-series.
 
-`Templates.sliding_window_daily` (secondary, bucket `:day`) — daily buckets for short retention telemetry.
+`Templates.sliding_window_daily` (bucket `:day`) — daily buckets for short retention telemetry.
 
-`Templates.sliding_window_weekly` (secondary, bucket `:week`) — ISO-week buckets.
+`Templates.sliding_window_weekly` (bucket `:week`) — ISO-week buckets.
 
-`Templates.sliding_window_quarterly` (secondary, bucket `:quarter`) — calendar-quarter buckets.
+`Templates.sliding_window_quarterly` (bucket `:quarter`) — calendar-quarter buckets.
 
-`Templates.calendar_year` (secondary, layout `:calendar_year`) — `RANGE (date)` yearly buckets.
+`Templates.calendar_year` (layout `:calendar_year`) — `RANGE (date)` yearly buckets.
 
-`Templates.rolling_current_monthly` (experimental, layout `:rolling_current`) — monthly sliding window without heat splits.
+`Templates.rolling_current_monthly` (layout `:rolling_current`) — monthly sliding window without heat splits.
 
-`Templates.integer_window` (secondary, layout `:integer_window`) — `RANGE (bigint)` id bands.
+`Templates.integer_window` (layout `:integer_window`) — `RANGE (bigint)` id bands.
 
-`Templates.list_split` (secondary, layout `:list_split`) — fixed `LIST` branches.
+`Templates.list_split` (layout `:list_split`) — fixed `LIST` branches.
 
-`Templates.composite_list_hash` (secondary, layout `:composite`) — LIST parent plus HASH sub-trees.
+`Templates.composite_list_hash` (layout `:composite`) — LIST parent plus HASH sub-trees.
 
-`Templates.composite_list_range` / `Templates.list_range` (experimental) — LIST parent plus RANGE sliding-window sub-trees.
+`Templates.composite_list_range` / `Templates.list_range` — LIST parent plus RANGE sliding-window sub-trees.
 
-`Templates.composite_range_hash` (experimental) — RANGE parent plus HASH child tables.
+`Templates.composite_range_hash` — RANGE parent plus HASH child tables.
 
-`Templates.composite_range_list` (experimental) — RANGE parent plus LIST child tables.
+`Templates.composite_range_list` — RANGE parent plus LIST child tables.
 
-`Templates.hash_branches` (experimental, layout `:hash_branches`) — `HASH` remainders.
+`Templates.hash_branches` (layout `:hash_branches`) — `HASH` remainders.
 
-`Templates.premake_monthly` (legacy, layout `:premake_monthly`) — cron-style premake bridge; migrate to sliding window.
+`Templates.premake_monthly` (layout `:premake_monthly`) — cron-style premake bridge; migrate to sliding window.
 
 See [docs/partition_landscape.md](docs/partition_landscape.md) for the template catalog, Rails sharding, composite keys, partition pruning, UI and product surfaces, aggregate snapshots, and materialized view limits. Operations: [operations.md](docs/operations.md), [cutover.md](docs/cutover.md), [monitoring.md](docs/monitoring.md).
 

@@ -5,7 +5,7 @@ Move a live non-partitioned table to declarative partitioning with minimal downt
 ## Prerequisites
 
 - Composite unique index including the partition key, matching `conflict_key` ([partition_landscape.md](partition_landscape.md)).
-- Registry entry chosen (`sliding_window_monthly` recommended) and reviewed with `suggest_template`.
+- Registry entry chosen (typically `sliding_window_monthly`; see [decision_flow.md](decision_flow.md)).
 - Maintenance job scheduled or CLI access for the first `run!` after cutover.
 - Staging environment with production-shaped data and the same registry.
 

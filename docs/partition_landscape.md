@@ -4,35 +4,35 @@ Partition Gardener targets PostgreSQL native declarative partitioning with garde
 
 ## Implemented templates
 
-sliding_window_monthly — layout sliding_window, bucket month, reliability recommended. Default time-series on a date or timestamp column.
+sliding_window_monthly — layout sliding_window, bucket month. Default time-series on a date or timestamp column.
 
-sliding_window_daily — layout sliding_window, bucket day, reliability legacy. High-volume telemetry with short retention.
+sliding_window_daily — layout sliding_window, bucket day. High-volume telemetry with short retention.
 
-sliding_window_weekly — layout sliding_window, bucket week, reliability legacy. Weekly rollups or compliance windows.
+sliding_window_weekly — layout sliding_window, bucket week. Weekly rollups or compliance windows.
 
-sliding_window_quarterly — layout sliding_window, bucket quarter, reliability legacy. Finance or reporting quarters.
+sliding_window_quarterly — layout sliding_window, bucket quarter. Finance or reporting quarters.
 
-calendar_year — layout calendar_year, bucket year, reliability legacy. Long-lived yearly archives.
+calendar_year — layout calendar_year, bucket year. Long-lived yearly archives.
 
-rolling_current_monthly — layout rolling_current, bucket month, reliability experimental. One wide current child, no heat splits inside the active window.
+rolling_current_monthly — layout rolling_current, bucket month. One wide current child, no heat splits inside the active window.
 
-premake_monthly — layout premake_monthly, bucket month, reliability legacy. Bridge from cron premake; migrate to sliding window.
+premake_monthly — layout premake_monthly, bucket month. Bridge from cron premake; migrate to sliding window.
 
-integer_window — layout integer_window, reliability legacy. Monotonic bigint keys with id-band pruning.
+integer_window — layout integer_window. Monotonic bigint keys with id-band pruning.
 
-list_split — layout list_split, reliability legacy. Small stable enum or tenant discriminator.
+list_split — layout list_split. Small stable enum or tenant discriminator.
 
-hash_branches — layout hash_branches, reliability experimental. Even fan-out on a hash key.
+hash_branches — layout hash_branches. Even fan-out on a hash key.
 
-composite_list_hash — layout composite, reliability legacy. LIST parent with HASH sub-trees per branch.
+composite_list_hash — layout composite. LIST parent with HASH sub-trees per branch.
 
-composite_list_range — layout composite, reliability experimental. LIST parent with RANGE sliding-window sub-trees.
+composite_list_range — layout composite. LIST parent with RANGE sliding-window sub-trees.
 
-list_range — layout composite, reliability experimental. Alias for composite_list_range.
+list_range — layout composite. Alias for composite_list_range.
 
-composite_range_hash — layout composite, reliability experimental. RANGE parent with HASH child tables.
+composite_range_hash — layout composite. RANGE parent with HASH child tables.
 
-composite_range_list — layout composite, reliability experimental. RANGE parent with LIST child tables.
+composite_range_list — layout composite. RANGE parent with LIST child tables.
 
 Register with `Registry.register_template(:sliding_window_monthly, ...)` or `Registry.register(Templates.sliding_window_monthly(...))`.
 

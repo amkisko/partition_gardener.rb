@@ -134,9 +134,7 @@ flowchart TD
 
 ## Mapping to Partition Gardener
 
-Call PartitionGardener.suggest_template with partition_key_column and conflict_key for a first-pass template and warnings. Date-like keys suggest sliding_window_monthly. Monotonic id keys suggest integer_window with a warning that date range is usually preferable when time filters exist.
-
-Register the returned template in Registry unless hosting policy forces pg_partman for that table. Mark legacy templates explicitly when migrating from premake-only or rolling-current jobs; they log reliability warnings on register.
+Pick a template from [decision_flow.md](decision_flow.md) and register it with `Registry.register_template` or `Registry.register` unless hosting policy forces pg_partman for that table.
 
 For cutover migrations, include Migration::HotSwitchConcern, resolve partition_config from Registry.hot_switch_partition_config when the table is already registered, and pass months_ahead of one at switch time.
 

@@ -90,7 +90,7 @@ PartitionGardener::Registry.register_template(
 PartitionGardener::Registry.register_all([config_a, config_b])
 ```
 
-`Registry.register_template` calls the matching `Templates` builder, then `Registry.register`. `Registry.register` normalizes the config, assigns a reliability tier, validates `maintenance_backend` against `partman.part_config`, and replaces any prior entry with the same `table_name`.
+`Registry.register_template` calls the matching `Templates` builder, then `Registry.register`. `Registry.register` normalizes the config, validates `maintenance_backend` against `partman.part_config`, and replaces any prior entry with the same `table_name`.
 
 ### Template builders
 
@@ -112,7 +112,27 @@ PartitionGardener::Registry.register_all([config_a, config_b])
 
 `Templates.hash_branches` — layout `:hash_branches`; key option `hash_modulus`.
 
-`Templates.list_split` — layout `:list_split`; key option `branches`.
+`Templates.list_split` — layout `:list_split`; key option `branches`. Each branch needs `name` and `value`. Provide a structured `predicate` (`column`, `operator`, `value`), or omit it when `partition_key_column` (or `discriminator_column` on composite parents) matches the equality column and `value` is the partition key.
+
+Supported predicate operators: `eq`, `ne`, `is_null`, `is_not_null`. Column names must be simple identifiers; values are quoted through the database connection.
+
+```ruby
+Templates.list_split(
+  table_name: "repository_packages",
+  partition_key_column: "branch",
+  conflict_key: %w[id],
+  branches: [
+    {name: "cached", value: "cached"},
+    {
+      name: "workspace",
+      value: "workspace",
+      predicate: {column: "branch", operator: "eq", value: "workspace"}
+    }
+  ]
+)
+```
+
+Legacy `where_condition` SQL fragments are still accepted but should be migrated to predicates.
 
 `Templates.composite_list_hash` — layout `:composite`, `parent_mode: :list`; LIST parent plus HASH branches.
 
@@ -122,7 +142,7 @@ PartitionGardener::Registry.register_all([config_a, config_b])
 
 `Templates.composite_range_list` — RANGE parent plus LIST child tables.
 
-See [partition_landscape.md](partition_landscape.md) for reliability tiers and out-of-scope patterns.
+See [partition_landscape.md](partition_landscape.md) for the template catalog and out-of-scope patterns.
 
 All templates accept shared options passed through to the registry hash:
 
@@ -163,19 +183,6 @@ Advanced Ruby-only keys (not in JSON import): `partition_name_format`, `partitio
 `:hybrid_layout_only` — gardener runs tail rebalance, default drain, and gap repair only; partman runs premake and simple retention.
 
 On register, Gardener warns when partman and gardener both claim the same parent. Set `strict_maintenance_backend_validation: true` in `PartitionGardener.configure` to raise `MaintenanceBackend::ValidationError` instead of notifying. See [tooling_split.md](tooling_split.md).
-
-### Suggest a template
-
-```ruby
-PartitionGardener.suggest_template(
-  table_name: "events",
-  partition_key_column: "occurred_on",
-  conflict_key: %w[id occurred_on]
-)
-# => { template:, reliability:, config:, warnings: [] }
-```
-
-Use the returned `config` as a starting point for `Registry.register`. `PartitionGardener.recommend` is an alias.
 
 ## JSON registry files
 
@@ -228,7 +235,7 @@ JSON import supports layouts: `sliding_window` (with optional `bucket`: day, wee
 
 Registry entries are operator-controlled configuration, not end-user input.
 
-`partition_key_column` and list-branch `where_condition` values are embedded in generated SQL. Keep registry files and Ruby registration limited to trusted operators. Do not load registry JSON from untrusted upload paths without a separate review step.
+`partition_key_column` is embedded in generated SQL as a trusted expression. List-branch filters should use structured `predicate` hashes (rendered with quoted identifiers and values at registration). Legacy `where_condition` strings are still accepted but bypass that validation. Keep registry files and Ruby registration limited to trusted operators. Do not load registry JSON from untrusted upload paths without a separate review step.
 
 ## Programmatic API
 
@@ -241,8 +248,6 @@ Registry entries are operator-controlled configuration, not end-user input.
 `PartitionGardener.plan(table_name: "audits")` — plan report for one table.
 
 `PartitionGardener.audit("audits")` — read-only layout audit (default rows, gaps, horizon).
-
-`PartitionGardener.suggest_template(...)` — template suggestion (`recommend` is an alias).
 
 `run!` skips tables that are not partitioned, use `maintenance_backend: :pg_partman`, or fail to acquire the advisory lock. Returns `RunSummary`; raises `RunFailed` when `continue_on_error` is false or after aggregating errors at the end.
 

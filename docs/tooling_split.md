@@ -77,4 +77,3 @@ Migrate to `sliding_window_monthly` when default stays empty and horizon warning
 - [background_job.md](background_job.md) — schedule gardener runs
 - [cutover.md](cutover.md) — creation through hot switch
 - [related_postgres_tooling.md](related_postgres_tooling.md) — ankane tools; pgslice hot-switch detail in [cutover.md](cutover.md#lessons-from-pgslice)
-- `PartitionGardener.suggest_template` — suggested template for a partition key (`recommend` is an alias)

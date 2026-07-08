@@ -13,8 +13,6 @@ module PartitionGardener
     ?table_name: String?
   ) -> untyped
 
-  def self.suggest_template: (**untyped) -> untyped
-  def self.recommend: (**untyped) -> untyped
   def self.audit: (String table_name) -> untyped
   def self.plan: (?table_name: String?, ?config: Hash[Symbol, untyped]?) -> untyped
   def self.maintenance_for: (Hash[Symbol, untyped] config, ?job_class_name: String) -> untyped

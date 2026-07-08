@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.3.0 (2026-07-08)
+
+- Remove `suggest_template`, `recommend`, and register-time layout reliability warnings
+- Add structured branch predicates for list-split layouts so operators declare column, operator, and value instead of raw SQL fragments
+- Add shorthand list-branch filters from partition key column plus branch value at registration time
+- Document materialized view limits, manual per-slice patterns, and rollup table alternatives in the partition landscape guide
+- Clarify Gardener maintenance scope applies to declarative partitioned tables, not materialized views
+
 ## 0.2.0 (2026-07-06)
 
 - Add configuration, background job, and CLI guides under `docs/`
