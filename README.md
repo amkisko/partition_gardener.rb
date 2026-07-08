@@ -152,7 +152,7 @@ Legacy or experimental layouts remain available for composite trees and migratio
 
 `Templates.premake_monthly` (legacy, layout `:premake_monthly`) — cron-style premake bridge; migrate to sliding window.
 
-See [docs/partition_landscape.md](docs/partition_landscape.md) for template matrix, Rails sharding, composite keys, partition pruning, UI and product surfaces, and aggregate snapshots. Operations: [operations.md](docs/operations.md), [cutover.md](docs/cutover.md), [monitoring.md](docs/monitoring.md).
+See [docs/partition_landscape.md](docs/partition_landscape.md) for the template catalog, Rails sharding, composite keys, partition pruning, UI and product surfaces, and aggregate snapshots. Operations: [operations.md](docs/operations.md), [cutover.md](docs/cutover.md), [monitoring.md](docs/monitoring.md).
 
 ## Hot-switch migrations
 

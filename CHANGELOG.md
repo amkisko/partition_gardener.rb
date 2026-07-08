@@ -3,7 +3,7 @@
 ## 0.2.0 (2026-07-06)
 
 - Add configuration, background job, and CLI guides under `docs/`
-- Add `partition_gardener` CLI with `plan`, `audit`, and `apply` for dry-run planning, health checks, and maintenance
+- Add `partition_gardener` CLI with `plan`, `audit`, and `apply` for dry-run planning, layout audit, and maintenance
 - Add dry-run plan reports with gap detection and JSON schema export
 - Add hot-switch migration helpers for zero-downtime cutover to partitioned tables
 - Add layout recommendations for date partition keys
