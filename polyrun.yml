@@ -17,6 +17,9 @@ partition:
       - glob: spec/integration/**/*_spec.rb
         sort_by_substring_order:
           - sliding_window_maintenance
+          - integer_window_maintenance
+          - hash_branches_maintenance
+          - pg_connection_maintenance
           - premake_monthly
           - rebalance_resume
           - advisory_lock

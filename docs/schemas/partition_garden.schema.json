@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/amkisko/partition_gardener.rb/main/docs/schemas/partition_garden.schema.json",
+  "title": "Partition Gardener table registration",
+  "description": "Portable fields for registering a partitioned parent table. Ruby lambdas (partition_name_format, partition_definition) are omitted; use layout templates instead.",
+  "type": "object",
+  "required": ["table_name", "layout", "partition_key_column", "conflict_key"],
+  "additionalProperties": false,
+  "properties": {
+    "table_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "layout": {
+      "type": "string",
+      "enum": [
+        "sliding_window",
+        "rolling_current",
+        "calendar_year",
+        "premake_monthly",
+        "integer_window",
+        "hash_branches"
+      ]
+    },
+    "bucket": {
+      "type": "string",
+      "enum": ["day", "week", "month", "quarter", "year"]
+    },
+    "partition_key_column": {
+      "type": "string",
+      "minLength": 1
+    },
+    "conflict_key": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "active_days": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 366
+    },
+    "active_weeks": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 104
+    },
+    "active_months": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 36
+    },
+    "active_quarters": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "active_years": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "premake_months": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 24
+    },
+    "split_row_threshold": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "move_batch_size": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "statement_timeout": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Statement timeout in seconds for maintenance on this table"
+    },
+    "retention_months": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "retention_apply": {
+      "type": "boolean",
+      "description": "When true, detach or drop archive partitions past retention_months; when false or omitted, log would-drop actions only"
+    },
+    "retention_keep_table": {
+      "type": "boolean"
+    },
+    "retention_detach_concurrently": {
+      "type": "boolean"
+    },
+    "hash_modulus": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 128
+    },
+    "maintenance_backend": {
+      "type": "string",
+      "enum": ["gardener", "pg_partman", "hybrid_layout_only"]
+    },
+    "incremental_rebalance": {
+      "type": "boolean"
+    },
+    "run_record_enabled": {
+      "type": "boolean"
+    },
+    "analyze_after_rebalance": {
+      "type": "boolean"
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/amkisko/partition_gardener.rb/main/docs/schemas/plan_report.schema.json",
+  "title": "Partition Gardener plan report",
+  "description": "Dry-run output from PartitionGardener.plan or run!(dry_run: true)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "table_name",
+    "layout",
+    "changed",
+    "plan_signature",
+    "target_segments",
+    "attached_segments",
+    "operations",
+    "gaps",
+    "hot_buckets"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "table_name": { "type": "string" },
+    "layout": { "type": "string" },
+    "changed": { "type": "boolean" },
+    "plan_signature": { "type": "string" },
+    "target_segments": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/segment" }
+    },
+    "attached_segments": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/segment" }
+    },
+    "operations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "gaps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/gap" }
+    },
+    "hot_buckets": {
+      "type": "array"
+    }
+  },
+  "$defs": {
+    "segment": {
+      "type": "object",
+      "required": ["name", "range_start", "range_end", "kind"],
+      "properties": {
+        "name": { "type": "string" },
+        "range_start": {},
+        "range_end": {},
+        "kind": { "type": "string" }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "required": ["action"],
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["keep", "create", "reshape", "drop"]
+        },
+        "segment": { "$ref": "#/$defs/segment" },
+        "attached_segment": { "$ref": "#/$defs/segment" }
+      }
+    },
+    "gap": {
+      "type": "object",
+      "required": ["message"],
+      "properties": {
+        "range_start": {},
+        "range_end": {},
+        "message": { "type": "string" }
+      }
+    }
+  }
+}

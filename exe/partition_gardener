@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+require "partition_gardener"
+require "partition_gardener/cli"
+
+PartitionGardener::CLI.start
