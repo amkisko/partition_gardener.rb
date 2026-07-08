@@ -89,6 +89,14 @@ Style/AccessModifierDeclarations:
 Rails/ActiveRecordCallbacksOrder:
   Enabled: false
 
+Rails/Blank:
+  Exclude:
+    - lib/**/*
+
+Rails/Date:
+  Exclude:
+    - lib/partition_gardener/configuration.rb
+
 Style/FrozenStringLiteralComment:
   Enabled: false
 
@@ -109,6 +117,10 @@ ThreadSafety/ClassInstanceVariable:
 ThreadSafety/DirChdir:
   Exclude:
     - "*.gemspec"
+
+ThreadSafety/NewThread:
+  Exclude:
+    - spec/**/*
 
 Lint/Debugger:
   Enabled: true
@@ -136,6 +148,8 @@ Metrics/ModuleLength:
   Enabled: true
   CountAsOne: [array, hash, heredoc, method_call]
   Max: 200
+  Exclude:
+    - lib/partition_gardener/migration/**/*
 Metrics/ClassLength:
   Enabled: true
   CountAsOne: [array, hash, heredoc, method_call]
@@ -143,9 +157,13 @@ Metrics/ClassLength:
 Metrics/CyclomaticComplexity:
   Enabled: true
   Max: 18
+  Exclude:
+    - lib/partition_gardener/migration/**/*
 Metrics/PerceivedComplexity:
   Enabled: true
   Max: 18
+  Exclude:
+    - lib/partition_gardener/migration/**/*
 Metrics/AbcSize:
   Enabled: true
   Max: 40

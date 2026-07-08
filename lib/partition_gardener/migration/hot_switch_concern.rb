@@ -358,7 +358,7 @@ module PartitionGardener
           SQL
           result = execute(sql).first
           sequence_name = result["sequence_name"]
-          next if sequence_name.nil? || sequence_name.empty?
+          next if Blank.blank?(sequence_name)
 
           [column_name, sequence_name]
         end

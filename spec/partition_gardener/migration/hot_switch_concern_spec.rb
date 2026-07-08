@@ -120,8 +120,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
       swap_lock_timeout: "5s"
     )
 
-    allow(migration).to receive(:fetch_partitions).and_return([])
-    allow(migration).to receive(:serial_sequence_pairs).and_return([])
+    allow(migration).to receive_messages(fetch_partitions: [], serial_sequence_pairs: [])
     allow(migration).to receive(:remove_write_block_trigger)
     allow(migration).to receive(:execute) { |sql| executed_sql << sql }
 
@@ -138,8 +137,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
       swap_lock_timeout: nil
     )
 
-    allow(migration).to receive(:fetch_partitions).and_return([])
-    allow(migration).to receive(:serial_sequence_pairs).and_return([])
+    allow(migration).to receive_messages(fetch_partitions: [], serial_sequence_pairs: [])
     allow(migration).to receive(:remove_write_block_trigger)
     allow(migration).to receive(:execute) { |sql| executed_sql << sql }
 

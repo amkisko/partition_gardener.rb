@@ -70,7 +70,7 @@ module PartitionGardener
       return ActiveRecord::Base.connection if defined?(ActiveRecord::Base)
 
       database_url = ENV["DATABASE_URL"]
-      return nil if database_url.nil? || database_url.empty?
+      return nil if Blank.blank?(database_url)
 
       @pg_connection ||= PgConnection.connect(database_url).tap do
         # Standalone maintenance runs many statements; session locks avoid one long transaction.
@@ -81,8 +81,7 @@ module PartitionGardener
     def sql_run_record_store_available?
       return true if defined?(ActiveRecord::Base)
 
-      database_url = ENV["DATABASE_URL"]
-      !database_url.nil? && !database_url.empty?
+      Blank.present?(ENV["DATABASE_URL"])
     end
   end
 

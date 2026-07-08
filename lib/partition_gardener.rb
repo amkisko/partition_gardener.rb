@@ -69,63 +69,13 @@ module PartitionGardener
       configs = filter_table ? Registry.configs_for_table(filter_table) : Registry.expanded_table_configs
 
       configs.each do |config|
-        table_name = config[:table_name]
-        table_timeout = config.fetch(:statement_timeout, statement_timeout)
-        metrics = RunMetrics.new(table_name)
-
-        configuration.with_statement_timeout(table_timeout) do
-          Connection.clear_attached_partitions_cache!
-
-          unless Connection.table_is_partitioned?(table_name)
-            metrics.mark_skipped!("not_partitioned")
-            table_results << metrics
-            next
-          end
-
-          if MaintenanceBackend.skipped?(config)
-            metrics.mark_skipped!("maintenance_backend_pg_partman")
-            table_results << metrics
-            next
-          end
-
-          configuration.current_run_metrics = metrics
-
-          AdvisoryLock.with_table_lock(table_name) do
-            DefaultPartition.ensure!(config)
-            maintenance_for(config, job_class_name: job_class_name).run!
-          end
-
-          metrics.finish!
-          emit_run_metadata(metrics, job_class_name: job_class_name)
-          table_results << metrics
-        rescue LockNotAcquired => error
-          metrics.mark_skipped!("lock_not_acquired")
-          configuration.notify(
-            "[PartitionGardener] skipped #{table_name}: #{error.message}",
-            context: {
-              table_name: table_name,
-              job: job_class_name,
-              action: "lock"
-            }
-          )
-          table_results << metrics
-        rescue => error
-          metrics.finish!
-          configuration.notify(
-            error,
-            context: {
-              table_name: table_name,
-              job: job_class_name,
-              action: "run",
-              run_metadata: metrics.to_h
-            }
-          )
-          errors << error
-          table_results << metrics
-          raise unless continue_on_error
-        ensure
-          configuration.current_run_metrics = nil
-        end
+        table_results << run_single_table!(
+          config,
+          statement_timeout: statement_timeout,
+          job_class_name: job_class_name,
+          continue_on_error: continue_on_error,
+          errors: errors
+        )
       end
 
       summary = RunSummary.new(tables: table_results, errors: errors)
@@ -199,7 +149,66 @@ module PartitionGardener
       Registry.each_table_config.map { |config| PlanReport.build(config) }
     end
 
-    private :plan_all, :emit_run_metadata
+    def run_single_table!(config, statement_timeout:, job_class_name:, continue_on_error:, errors:)
+      table_name = config[:table_name]
+      table_timeout = config.fetch(:statement_timeout, statement_timeout)
+      metrics = RunMetrics.new(table_name)
+
+      configuration.with_statement_timeout(table_timeout) do
+        Connection.clear_attached_partitions_cache!
+
+        unless Connection.table_is_partitioned?(table_name)
+          metrics.mark_skipped!("not_partitioned")
+          return metrics
+        end
+
+        if MaintenanceBackend.skipped?(config)
+          metrics.mark_skipped!("maintenance_backend_pg_partman")
+          return metrics
+        end
+
+        configuration.current_run_metrics = metrics
+
+        AdvisoryLock.with_table_lock(table_name) do
+          DefaultPartition.ensure!(config)
+          maintenance_for(config, job_class_name: job_class_name).run!
+        end
+
+        metrics.finish!
+        emit_run_metadata(metrics, job_class_name: job_class_name)
+        metrics
+      rescue LockNotAcquired => error
+        metrics.mark_skipped!("lock_not_acquired")
+        configuration.notify(
+          "[PartitionGardener] skipped #{table_name}: #{error.message}",
+          context: {
+            table_name: table_name,
+            job: job_class_name,
+            action: "lock"
+          }
+        )
+        metrics
+      rescue => error
+        metrics.finish!
+        configuration.notify(
+          error,
+          context: {
+            table_name: table_name,
+            job: job_class_name,
+            action: "run",
+            run_metadata: metrics.to_h
+          }
+        )
+        errors << error
+        raise unless continue_on_error
+
+        metrics
+      ensure
+        configuration.current_run_metrics = nil
+      end
+    end
+
+    private :plan_all, :emit_run_metadata, :run_single_table!
   end
 end
 

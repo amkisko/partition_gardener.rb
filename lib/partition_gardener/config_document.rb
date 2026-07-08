@@ -166,22 +166,39 @@ module PartitionGardener
     def validate_registry_document!(document)
       raise ArgumentError, "registry entry must be a JSON object" unless document.is_a?(Hash)
 
+      validate_registry_required_keys!(document)
+      validate_registry_unknown_keys!(document)
+      validate_registry_layout!(document)
+      validate_registry_core_strings!(document)
+      validate_registry_conflict_key!(document)
+      validate_registry_optional_bucket!(document)
+      validate_registry_optional_maintenance_backend!(document)
+      document
+    end
+
+    def validate_registry_required_keys!(document)
       missing_keys = %w[table_name layout partition_key_column conflict_key] - document.keys
-      if missing_keys.any?
-        raise ArgumentError, "registry entry missing required keys: #{missing_keys.join(", ")}"
-      end
+      return if missing_keys.empty?
 
+      raise ArgumentError, "registry entry missing required keys: #{missing_keys.join(", ")}"
+    end
+
+    def validate_registry_unknown_keys!(document)
       unknown_keys = document.keys - ALLOWED_REGISTRY_KEYS
-      if unknown_keys.any?
-        raise ArgumentError, "registry entry has unsupported keys: #{unknown_keys.join(", ")}"
-      end
+      return if unknown_keys.empty?
 
+      raise ArgumentError, "registry entry has unsupported keys: #{unknown_keys.join(", ")}"
+    end
+
+    def validate_registry_layout!(document)
       layout = document.fetch("layout")
-      unless layout.is_a?(String) && IMPORTABLE_LAYOUTS.include?(layout)
-        supported = IMPORTABLE_LAYOUTS.join(", ")
-        raise ArgumentError, "layout #{layout.inspect} is not supported in JSON import (supported: #{supported}; composite and list_split require Ruby registration)"
-      end
+      return if layout.is_a?(String) && IMPORTABLE_LAYOUTS.include?(layout)
 
+      supported = IMPORTABLE_LAYOUTS.join(", ")
+      raise ArgumentError, "layout #{layout.inspect} is not supported in JSON import (supported: #{supported}; composite and list_split require Ruby registration)"
+    end
+
+    def validate_registry_core_strings!(document)
       unless document.fetch("table_name").is_a?(String) && !document.fetch("table_name").empty?
         raise ArgumentError, "table_name must be a non-empty string"
       end
@@ -189,27 +206,31 @@ module PartitionGardener
       unless document.fetch("partition_key_column").is_a?(String) && !document.fetch("partition_key_column").empty?
         raise ArgumentError, "partition_key_column must be a non-empty string"
       end
+    end
 
+    def validate_registry_conflict_key!(document)
       conflict_key = document.fetch("conflict_key")
-      unless conflict_key.is_a?(Array) && conflict_key.any? && conflict_key.all? { |column| column.is_a?(String) && !column.empty? }
-        raise ArgumentError, "conflict_key must be a non-empty array of strings"
-      end
+      return if conflict_key.is_a?(Array) && conflict_key.any? && conflict_key.all? { |column| column.is_a?(String) && !column.empty? }
 
-      if document.key?("bucket")
-        bucket = document.fetch("bucket")
-        unless bucket.is_a?(String) && %w[day week month quarter year].include?(bucket)
-          raise ArgumentError, "bucket must be one of: day, week, month, quarter, year"
-        end
-      end
+      raise ArgumentError, "conflict_key must be a non-empty array of strings"
+    end
 
-      if document.key?("maintenance_backend")
-        backend = document.fetch("maintenance_backend")
-        unless backend.is_a?(String) && %w[gardener pg_partman hybrid_layout_only].include?(backend)
-          raise ArgumentError, "maintenance_backend must be gardener, pg_partman, or hybrid_layout_only"
-        end
-      end
+    def validate_registry_optional_bucket!(document)
+      return unless document.key?("bucket")
 
-      document
+      bucket = document.fetch("bucket")
+      return if bucket.is_a?(String) && %w[day week month quarter year].include?(bucket)
+
+      raise ArgumentError, "bucket must be one of: day, week, month, quarter, year"
+    end
+
+    def validate_registry_optional_maintenance_backend!(document)
+      return unless document.key?("maintenance_backend")
+
+      backend = document.fetch("maintenance_backend")
+      return if backend.is_a?(String) && %w[gardener pg_partman hybrid_layout_only].include?(backend)
+
+      raise ArgumentError, "maintenance_backend must be gardener, pg_partman, or hybrid_layout_only"
     end
 
     def register_validated_document!(document)

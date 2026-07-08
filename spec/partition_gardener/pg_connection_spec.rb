@@ -7,8 +7,7 @@ RSpec.describe PartitionGardener::PgConnection do
   before do
     allow(raw_connection).to receive(:escape_string) { |value| value.gsub("'", "''") }
     allow(raw_connection).to receive(:quote_ident).with("events").and_return('"events"')
-    allow(raw_connection).to receive(:exec_params).and_return(instance_double(PG::Result, getvalue: "t", ntuples: 1))
-    allow(raw_connection).to receive(:exec).and_return(instance_double(PG::Result, :ntuples => 0, :cmd_tuples => 0, :[] => nil, :each => [].each))
+    allow(raw_connection).to receive_messages(exec_params: instance_double(PG::Result, getvalue: "t", ntuples: 1), exec: instance_double(PG::Result, :ntuples => 0, :cmd_tuples => 0, :[] => nil, :each => [].each))
   end
 
   it "quotes string values for SQL" do
