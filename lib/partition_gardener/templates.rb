@@ -295,19 +295,19 @@ module PartitionGardener
       active_value = options[active_key] || DateBucket.default_active_span(bucket)
 
       normalize({
-        table_name: table_name,
-        layout: layout,
-        bucket: bucket,
-        partition_key_column: partition_key_column,
-        conflict_key: conflict_key,
+        :table_name => table_name,
+        :layout => layout,
+        :bucket => bucket,
+        :partition_key_column => partition_key_column,
+        :conflict_key => conflict_key,
         active_key => active_value,
-        partition_name_format: options.fetch(:partition_name_format) {
+        :partition_name_format => options.fetch(:partition_name_format) {
           ->(identifier) { DateBucket.partition_name(table_name, identifier, bucket) }
         },
-        partition_definition: options.fetch(:partition_definition) {
+        :partition_definition => options.fetch(:partition_definition) {
           ->(date) { DateBucket.partition_definition_clause(date, bucket) }
         },
-        extract_partition_identifier: options.fetch(:extract_partition_identifier) {
+        :extract_partition_identifier => options.fetch(:extract_partition_identifier) {
           ->(date_value) { DateBucket.beginning_of_bucket(date_value, bucket) }
         }
       }.merge(options.except(:partition_name_format, :partition_definition, :extract_partition_identifier, active_key)).tap do |config|
@@ -345,7 +345,7 @@ module PartitionGardener
         conflict_key: conflict_key,
         default_child_layout: default_child_layout,
         default_child_bucket: default_child_bucket,
-        list_branches: parent_mode == :list ? list_branch_entries : nil,
+        list_branches: (parent_mode == :list) ? list_branch_entries : nil,
         branches: child_branches
       }.compact.merge(options))
     end

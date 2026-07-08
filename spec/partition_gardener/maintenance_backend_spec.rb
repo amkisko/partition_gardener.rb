@@ -42,16 +42,13 @@ RSpec.describe PartitionGardener::MaintenanceBackend do
     before do
       allow(described_class).to receive(:partman_parent_configured?).and_return(partman_row)
       PartitionGardener.configuration.strict_maintenance_backend_validation = strict
+      PartitionGardener.configuration.notifier = ->(message, **) { notifier << message }
     end
 
     let(:strict) { false }
     let(:partman_row) { false }
     let(:backend) { :gardener }
     let(:notifier) { [] }
-
-    before do
-      PartitionGardener.configuration.notifier = ->(message, **) { notifier << message }
-    end
 
     context "when gardener is registered but partman also owns the parent" do
       let(:partman_row) { true }

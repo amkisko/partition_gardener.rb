@@ -71,7 +71,7 @@ module PartitionGardener
       @raw_connection.exec("BEGIN")
       yield
       @raw_connection.exec("COMMIT")
-    rescue StandardError
+    rescue
       @raw_connection.exec("ROLLBACK")
       raise
     end
