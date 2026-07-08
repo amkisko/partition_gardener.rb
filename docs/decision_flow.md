@@ -10,7 +10,7 @@ Most tables never need partitions. Partitioning adds catalog complexity, migrati
 
 Defer partitioning when the table is small and growth is modest. A common practical band is below a few hundred megabytes on disk with no retention pressure and no recurring vacuum or reindex pain on the parent. In that band, indexes, query shape, and retention policy usually deliver more than partitions.
 
-Defer partitioning when queries do not consistently filter on a single dominant dimension. If reports routinely scan wide date ranges, join many tenants in one query, or ignore the column you would partition on, the planner cannot prune children and you pay partition overhead without benefit. Plan those reports as snapshot or warehouse paths, not live OLTP aggregates.
+Defer partitioning when queries do not consistently filter on a single dominant dimension. If reports routinely scan wide date ranges, join many tenants in one query, or ignore the column you would partition on, the planner cannot prune children and you pay partition overhead without benefit. Plan those reports as snapshot or warehouse paths, not live OLTP aggregates. A single materialized view over all history has the same scan cost on read and does not partition; see [partition_landscape.md](partition_landscape.md#materialized-views).
 
 Defer partitioning when the real problem is a missing index or an unbounded delete. Bulk delete followed by vacuum is the wrong motivation. Partitioning pays off when you can drop or detach whole children, or when per-child maintenance and pruning match how the application reads and writes.
 

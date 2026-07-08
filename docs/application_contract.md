@@ -69,7 +69,7 @@ Maintenance runs per shard; registry JSON may differ per shard only if layouts d
 - Default filters: current month or selected tenant, not all history.
 - Global id search is an advanced, slow path; require date or tenant hint.
 - Export flows chunk by bucket; show progress per period.
-- Totals read from snapshot tables with `computed_at`, not live `SUM` across all children.
+- Totals read from snapshot tables with `computed_at`, not live `SUM` across all children or a stale materialized view over the full fact table ([partition_landscape.md](partition_landscape.md#materialized-views)).
 
 ## Testing expectations
 

@@ -18,7 +18,7 @@ Complements migration gems (e.g. [pg_party](https://github.com/rkrage/pg_party))
 ### Choosing and configuring
 
 - [docs/decision_flow.md](docs/decision_flow.md) — when to partition, layout, and method choices
-- [docs/partition_landscape.md](docs/partition_landscape.md) — templates, Rails sharding, pruning, UI, aggregate snapshots
+- [docs/partition_landscape.md](docs/partition_landscape.md) — templates, Rails sharding, pruning, UI, aggregate snapshots, materialized views
 - [docs/configuration.md](docs/configuration.md) — global config, registry, per-table options, JSON import
 - [docs/tooling_split.md](docs/tooling_split.md) — pg_party vs pg_partman vs Gardener
 - [docs/related_postgres_tooling.md](docs/related_postgres_tooling.md) — PgHero, Dexter, pgsync, pgslice vs Gardener
@@ -152,7 +152,7 @@ Legacy or experimental layouts remain available for composite trees and migratio
 
 `Templates.premake_monthly` (legacy, layout `:premake_monthly`) — cron-style premake bridge; migrate to sliding window.
 
-See [docs/partition_landscape.md](docs/partition_landscape.md) for the template catalog, Rails sharding, composite keys, partition pruning, UI and product surfaces, and aggregate snapshots. Operations: [operations.md](docs/operations.md), [cutover.md](docs/cutover.md), [monitoring.md](docs/monitoring.md).
+See [docs/partition_landscape.md](docs/partition_landscape.md) for the template catalog, Rails sharding, composite keys, partition pruning, UI and product surfaces, aggregate snapshots, and materialized view limits. Operations: [operations.md](docs/operations.md), [cutover.md](docs/cutover.md), [monitoring.md](docs/monitoring.md).
 
 ## Hot-switch migrations
 

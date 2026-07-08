@@ -152,7 +152,7 @@ The CLI `apply` command accepts one table by default; pass `--all` for the full 
 
 ## Rollup and snapshot jobs
 
-Dashboard totals and cross-period aggregates should refresh in separate background jobs, bucketed like partitions ([partition_landscape.md](partition_landscape.md#aggregates-totals-and-snapshots)). Schedule rollup recompute after maintenance when `rows_moved` is high, or on a fixed cadence with drift checks ([monitoring.md](monitoring.md)).
+Dashboard totals and cross-period aggregates should refresh in separate background jobs, bucketed like partitions ([partition_landscape.md](partition_landscape.md#aggregates-totals-and-snapshots)). Materialized views are not a substitute for bucket-keyed snapshot tables on hot paths ([materialized views](partition_landscape.md#materialized-views)). Schedule rollup recompute after maintenance when `rows_moved` is high, or on a fixed cadence with drift checks ([monitoring.md](monitoring.md)).
 
 ## Related
 

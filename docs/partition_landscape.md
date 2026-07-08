@@ -184,6 +184,8 @@ Snapshot shape:
 - Store `computed_at`, optional `source_watermark` (max `updated_at` or max id seen in source), and `version` for cache busting
 - Keep snapshots in a normal table or a dedicated rollup schema; they are not partition children of the fact table
 
+Prefer a regular rollup table over a materialized view when bucket keys, drift checks, and incremental updates matter. Materialized views are a poor stand-in for partition-shaped aggregates; see [Materialized views](#materialized-views) below.
+
 Background recalculation:
 
 - Incremental: on each write to the fact table, adjust the open bucket snapshot (current month, active tenant) in the same transaction or via an outbox job
@@ -207,6 +209,42 @@ Anti-patterns:
 
 Gardener does not maintain application snapshots; it only changes partition layout. Application jobs own rollup freshness and drift checks.
 
+### Materialized views
+
+PostgreSQL does not support declarative partitioning on materialized views. You cannot attach `PARTITION BY RANGE`, `LIST`, or `HASH` to a materialized view, run `ATTACH PARTITION` / `DETACH PARTITION` on one, or add `CHECK` constraints that enable constraint exclusion on child slices. Partition Gardener operates on declarative partitioned tables only; it does not plan, audit, or refresh materialized views.
+
+What still works:
+
+- Create a materialized view whose defining query reads from a partitioned fact table. Partition pruning may reduce work during refresh when the query carries plain predicates on the partition key, but `REFRESH MATERIALIZED VIEW` (PostgreSQL 18 and earlier) still replaces the entire stored result each time.
+- `REFRESH MATERIALIZED VIEW CONCURRENTLY` avoids blocking readers but refreshes the whole view and requires a unique index on plain columns covering all rows.
+
+Manual sharding pattern (common workaround):
+
+- One materialized view per time slice, each defined with a bounded `WHERE` on the source key.
+- A regular `VIEW` with `UNION ALL` over those materialized views as the query surface.
+
+Limits of that pattern:
+
+- No partition pruning across the union; a filter like `WHERE sale_date = '2026-04-15'` typically scans every child materialized view unless the application queries a specific child by name.
+- No `CHECK` constraints on materialized views, so the planner cannot prove row bounds per child.
+- Lifecycle is manual: new period means new materialized view, alter the union view, manage dependencies, and schedule per-slice refresh jobs.
+- pg_partman and Gardener do not maintain materialized views.
+
+Partial refresh on the horizon:
+
+- PostgreSQL 19 may add `REFRESH MATERIALIZED VIEW ... WHERE predicate` for predicate-scoped refresh. That narrows refresh cost; it does not make materialized views first-class partition citizens (no attach/detach, no gardener-style layout).
+
+Recommended pairing with Gardener:
+
+- Fast dashboard totals with drift control — bucket-keyed rollup table (optionally range-partitioned by period)
+- Drop old periods with retention — partitioned fact table plus Gardener; snapshots keyed by closed bucket survive detach
+- Stale-OK full recompute of one report — single materialized view over a bounded source query
+- Independent refresh per month at very large scale — multiple materialized views plus union view, with application routing to children; accept no cross-union pruning
+
+For hot paths next to indicator-driven maintenance, use snapshot tables with `computed_at` and reconciliation ([Aggregates, totals, and snapshots](#aggregates-totals-and-snapshots)), not a monolithic materialized view over all history.
+
+After Gardener moves rows between children, refresh or recompute any materialized view or snapshot that aggregates affected buckets. Gardener does not trigger those jobs.
+
 ### Common pitfalls (what teams report)
 
 - Admin search by `id` only on a time-partitioned table scans every month until the key encodes time or lookups include `occurred_on`
@@ -216,10 +254,16 @@ Gardener does not maintain application snapshots; it only changes partition layo
 - Assuming `includes` / `preload` on associations will prune parent partitions when the join does not constrain the partition key
 - Product UI that encourages unbounded browse (all-time lists, global id search) while the table is partitioned by time or tenant
 - Dashboard totals computed live across all partitions instead of served from bucket-keyed snapshots with background refresh and drift checks
+- Treating one large materialized view as a partitioned rollup; refresh cost grows with retention and Gardener row moves do not update it automatically
+- Expecting `UNION ALL` over per-month materialized views to prune like declarative partitions; query the child materialized view directly or use a rollup table
 
 ## Out of scope
 
 Delegate these to other tools or extensions; Gardener does not embed them.
+
+### Materialized views
+
+Declarative partitioning and Gardener maintenance apply to tables, not materialized views. See [Materialized views](partition_landscape.md#materialized-views) for manual multi-view patterns, refresh limits, and when to use rollup tables instead.
 
 ### ankane Postgres tools
 
@@ -263,6 +307,8 @@ Further reading:
 
 - [Tiny story PostgreSQL partitioning and Rails](https://amkisko.github.io/posts/20260306112539_tiny_story_postgresql_partitioning_and_rails.html)
 - [PostgreSQL: Table partitioning](https://www.postgresql.org/docs/current/ddl-partitioning.html)
+- [PostgreSQL: Materialized views](https://www.postgresql.org/docs/current/rules-materializedviews.html)
+- [PostgreSQL: REFRESH MATERIALIZED VIEW](https://www.postgresql.org/docs/current/sql-refreshmaterializedview.html)
 - [Rails Guides: Multiple databases (horizontal sharding)](https://guides.rubyonrails.org/active_record_multiple_databases.html)
 - [GitLab: Partitioned tables and composite primary keys](https://docs.gitlab.com/development/database/partitioning/)
 - [Aha!: Partitioning a large table in PostgreSQL with Rails](https://www.aha.io/engineering/articles/partitioning-a-large-table-in-postgresql-with-rails)
