@@ -1,4 +1,3 @@
-require "ostruct"
 require "spec_helper"
 
 RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
@@ -77,7 +76,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
       elsif sql.include?("pg_get_serial_sequence")
         []
       else
-        OpenStruct.new(cmd_tuples: insert_results.shift)
+        Struct.new(:cmd_tuples).new(insert_results.shift)
       end
     end
   end
