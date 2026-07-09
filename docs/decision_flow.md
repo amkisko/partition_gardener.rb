@@ -146,6 +146,7 @@ When in doubt, prefer fewer moving parts: range on a real access key, sliding wi
 
 ## Related
 
+- [partition_engines.md](partition_engines.md) — same patterns on MySQL, Oracle, YSQL, and other engines
 - [configuration.md](configuration.md) — registry options and `maintenance_backend`
 - [background_job.md](background_job.md) — schedule `run!` after layout is chosen
 - [tooling_split.md](tooling_split.md) — pg_party, pg_partman, Gardener ownership

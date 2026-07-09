@@ -281,6 +281,10 @@ Hypertables use chunk policies and compression, not declarative RANGE children. 
 
 Citus distributes tables across worker nodes inside PostgreSQL with its own shard metadata and rebalance tooling. That is neither Rails `connects_to` sharding nor native declarative partitioning on a single instance. Gardener does not drive Citus shard placement.
 
+### Other database engines
+
+Partition Gardener targets PostgreSQL declarative partitioning. The maintenance patterns (sliding window, retention, premake, default drain, hot-switch) apply on other engines with different DDL. YugabyteDB YSQL is the closest PostgreSQL-compatible fit; MySQL, Oracle, and SQL Server share partial overlap; CockroachDB and ClickHouse need TTL-first or repartition models. See [partition_engines.md](partition_engines.md) for the full engine map and what transfers without running this gem.
+
 ### UUIDv7 and encoded-time keys
 
 Time-ordered UUID primary keys are increasingly common. Partitioning on `date_trunc` of a timestamp column remains the recommended Gardener path. For UUID-native range strategies, use pg_partman 5.2+ or custom DDL; Gardener does not parse UUID time components today.

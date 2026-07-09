@@ -19,6 +19,7 @@ Complements migration gems (e.g. [pg_party](https://github.com/rkrage/pg_party))
 
 - [docs/decision_flow.md](docs/decision_flow.md) — when to partition, layout, and method choices
 - [docs/partition_landscape.md](docs/partition_landscape.md) — templates, Rails sharding, pruning, UI, aggregate snapshots, materialized views
+- [docs/partition_engines.md](docs/partition_engines.md) — portable patterns and other database engines
 - [docs/configuration.md](docs/configuration.md) — global config, registry, per-table options, JSON import
 - [docs/tooling_split.md](docs/tooling_split.md) — pg_party vs pg_partman vs Gardener
 - [docs/related_postgres_tooling.md](docs/related_postgres_tooling.md) — PgHero, Dexter, pgsync, pgslice vs Gardener

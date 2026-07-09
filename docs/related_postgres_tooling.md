@@ -192,4 +192,4 @@ Cross-link [Dexter](https://github.com/ankane/dexter) in [operations.md](operati
 - [Dexter](https://github.com/ankane/dexter)
 - [pgsync](https://github.com/ankane/pgsync)
 - [pgslice](https://github.com/ankane/pgslice)
-- In-repo: [tooling_split.md](tooling_split.md), [cutover.md](cutover.md), [monitoring.md](monitoring.md), [partition_landscape.md](partition_landscape.md)
+- In-repo: [tooling_split.md](tooling_split.md), [cutover.md](cutover.md), [monitoring.md](monitoring.md), [partition_landscape.md](partition_landscape.md), [partition_engines.md](partition_engines.md)
