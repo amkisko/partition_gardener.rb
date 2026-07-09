@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.3.1 (2026-07-09)
+
+- Add partition engines guide mapping portable maintenance patterns to MySQL, Oracle, SQL Server, Db2, YugabyteDB, and Aurora
+- Link the new guide from decision flow, partition landscape, and related tooling docs
+
 ## 0.3.0 (2026-07-08)
 
 - Remove `suggest_template`, `recommend`, and register-time layout reliability warnings
