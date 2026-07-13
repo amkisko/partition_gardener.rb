@@ -57,8 +57,9 @@ GEM
     pg (1.6.3-x86_64-darwin)
     pg (1.6.3-x86_64-linux)
     pg (1.6.3-x86_64-linux-musl)
-    polyrun (1.5.0)
+    polyrun (2.2.0)
     prism (1.9.0)
+    prosopite (2.2.0)
     racc (1.8.1)
     rack (3.2.6)
     rainbow (3.1.1)
@@ -171,7 +172,8 @@ DEPENDENCIES
   activesupport (>= 7.1)
   appraisal (~> 2)
   partition_gardener!
-  polyrun (~> 1.5.0)
+  polyrun (>= 2.2.0)
+  prosopite (~> 2.0)
   rake (~> 13)
   rbs (~> 3)
   rspec (~> 3)
@@ -214,8 +216,9 @@ CHECKSUMS
   pg (1.6.3-x86_64-darwin) sha256=ee2e04a17c0627225054ffeb43e31a95be9d7e93abda2737ea3ce4a62f2729d6
   pg (1.6.3-x86_64-linux) sha256=5d9e188c8f7a0295d162b7b88a768d8452a899977d44f3274d1946d67920ae8d
   pg (1.6.3-x86_64-linux-musl) sha256=9c9c90d98c72f78eb04c0f55e9618fe55d1512128e411035fe229ff427864009
-  polyrun (1.5.0) sha256=dfb58978eb11c7aa35a56e3d33e75671a5cc727652bc5b8bbc5dd798cfdc0189
+  polyrun (2.2.0) sha256=9545eb0b52a8c0266e94548b73f3521076c8fb3c1c126cc525297214262f228d
   prism (1.9.0) sha256=7b530c6a9f92c24300014919c9dcbc055bf4cdf51ec30aed099b06cd6674ef85
+  prosopite (2.2.0) sha256=14affaa3ff0ff15abe8f6ae2951de0984dc6da5df1c42333692d2c0789d08b91
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
   rack (3.2.6) sha256=5ed78e1f73b2e25679bec7d45ee2d4483cc4146eb1be0264fc4d94cb5ef212c2
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a

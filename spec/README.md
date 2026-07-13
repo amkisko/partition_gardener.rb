@@ -23,7 +23,7 @@ bundle exec rspec spec/partition_gardener/plan_applier_spec.rb
 INTEGRATION=1 bundle exec rspec spec/integration/
 ```
 
-See [POLYRUN.md](../POLYRUN.md) and `polyrun.yml`. Integration spec order is staged in `partition.paths_build.stages`. `make test` runs `hooks.before_suite` before specs.
+See `polyrun.yml`. Integration spec order is staged in `partition.paths_build.stages`. `make test` runs `hooks.before_suite` before specs.
 
 ## Layout
 
