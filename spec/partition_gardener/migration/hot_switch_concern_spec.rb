@@ -187,7 +187,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
     end.new
 
     connection = instance_double(
-      "Connection",
+      PartitionGardener::PgConnection,
       quote: "'public'",
       quote_column_name: '"id"',
       quote_table_name: '"events"'
