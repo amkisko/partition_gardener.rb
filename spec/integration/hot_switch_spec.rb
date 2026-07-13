@@ -31,10 +31,6 @@ RSpec.describe "hot switch migration", :integration do
 
       define_method(:hot_switch_config) { @config }
 
-      def execute(sql)
-        PartitionGardener::Integration::Database.connection.execute(sql)
-      end
-
       def connection
         PartitionGardener::Integration::Database.connection
       end

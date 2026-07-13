@@ -69,7 +69,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
     allow(migration).to receive(:table_columns).and_return(%w[id occurred_on updated_at])
 
     insert_results = [2, 2, 1, 0]
-    allow(migration).to receive(:execute) do |sql|
+    allow(migration.connection).to receive(:execute) do |sql|
       executed_sql << sql
       if sql.include?("SELECT COUNT")
         [{"count" => "5"}]
@@ -121,7 +121,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
 
     allow(migration).to receive_messages(fetch_partitions: [], serial_sequence_pairs: [])
     allow(migration).to receive(:remove_write_block_trigger)
-    allow(migration).to receive(:execute) { |sql| executed_sql << sql }
+    allow(migration.connection).to receive(:execute) { |sql| executed_sql << sql }
 
     migration.hot_switch_tables
 
@@ -138,7 +138,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
 
     allow(migration).to receive_messages(fetch_partitions: [], serial_sequence_pairs: [])
     allow(migration).to receive(:remove_write_block_trigger)
-    allow(migration).to receive(:execute) { |sql| executed_sql << sql }
+    allow(migration.connection).to receive(:execute) { |sql| executed_sql << sql }
 
     migration.hot_switch_tables
 
@@ -156,7 +156,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
     allow(migration).to receive(:fetch_partitions).and_return([])
     allow(migration).to receive(:remove_write_block_trigger)
     allow(migration).to receive(:serial_sequence_pairs).with("events").and_return([["id", "public.events_id_seq"]])
-    allow(migration).to receive(:execute) { |sql| executed_sql << sql }
+    allow(migration.connection).to receive(:execute) { |sql| executed_sql << sql }
 
     migration.hot_switch_tables
 
@@ -165,11 +165,41 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
 
   it "analyzes shadow partition children and parent" do
     allow(migration).to receive(:fetch_partitions).with("events_partitioned").and_return(%w[events_partitioned_2026_07])
-    allow(migration).to receive(:execute) { |sql| executed_sql << sql }
+    allow(migration.connection).to receive(:execute) { |sql| executed_sql << sql }
 
     migration.analyze_shadow_partitions!
 
     expect(executed_sql).to include("ANALYZE events_partitioned_2026_07")
     expect(executed_sql).to include('ANALYZE "events_partitioned"')
+  end
+
+  it "runs sql through the configured connection instead of ActiveRecord::Migration#execute" do
+    require "active_record"
+
+    migration = Class.new(ActiveRecord::Migration[7.2]) do
+      include PartitionGardener::Migration::HotSwitchConcern
+
+      const_set(:HOT_SWITCH_CONFIG, {
+        current_table: "events",
+        partitioned_table: "events_partitioned",
+        partition_key_column: "occurred_on"
+      })
+    end.new
+
+    connection = instance_double(
+      "Connection",
+      quote: "'public'",
+      quote_column_name: '"id"',
+      quote_table_name: '"events"'
+    )
+    allow(connection).to receive(:execute).and_return([{"column_name" => "id"}])
+
+    PartitionGardener.configure do |configuration|
+      configuration.schema_name = "public"
+      configuration.connection_resolver = -> { connection }
+    end
+
+    expect(migration.send(:table_columns, "events")).to eq(["id"])
+    expect(connection).to have_received(:execute)
   end
 end

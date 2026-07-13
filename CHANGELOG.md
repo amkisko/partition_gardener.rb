@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+
+- Route `HotSwitchConcern` DDL through `connection.execute` instead of `ActiveRecord::Migration#execute` so migration safety tools such as Strong Migrations do not intercept hot-switch SQL.
+
 ## 0.3.1 (2026-07-09)
 
 - Add partition engines guide mapping portable maintenance patterns to MySQL, Oracle, SQL Server, Db2, YugabyteDB, and Aurora

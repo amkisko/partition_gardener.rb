@@ -49,7 +49,7 @@ module PartitionGardener
             CREATE TABLE IF NOT EXISTS #{quoted_table(partition_name)} PARTITION OF #{quoted_table(partitioned_table)}
             FOR VALUES #{for_values_clause}
           SQL
-          execute(sql)
+          run_sql(sql)
           say "Created partition #{partition_name}"
         end
 
@@ -63,11 +63,11 @@ module PartitionGardener
         say "Analyzing shadow partitions for #{partitioned_table}"
 
         fetch_partitions(partitioned_table).each do |partition|
-          execute "ANALYZE #{partition}"
+          run_sql "ANALYZE #{partition}"
           say "Analyzed #{partition}"
         end
 
-        execute "ANALYZE #{quoted_table(partitioned_table)}"
+        run_sql "ANALYZE #{quoted_table(partitioned_table)}"
         say "Analyzed #{partitioned_table}"
       end
 
@@ -83,16 +83,16 @@ module PartitionGardener
           END;
           $$ LANGUAGE plpgsql;
         SQL
-        execute(sql)
+        run_sql(sql)
 
-        execute "DROP TRIGGER IF EXISTS #{trigger_name} ON #{quoted_table(table_name)}"
+        run_sql "DROP TRIGGER IF EXISTS #{trigger_name} ON #{quoted_table(table_name)}"
         sql = <<~SQL
           CREATE TRIGGER #{trigger_name}
           BEFORE INSERT OR UPDATE OR DELETE ON #{quoted_table(table_name)}
           FOR EACH ROW
           EXECUTE FUNCTION #{function_name}();
         SQL
-        execute(sql)
+        run_sql(sql)
 
         say "Added write-block trigger to #{table_name}"
       end
@@ -101,8 +101,8 @@ module PartitionGardener
         trigger_name = "#{initial_table_name}_write_block_trigger"
         function_name = "#{initial_table_name}_write_block_function"
 
-        execute "DROP TRIGGER IF EXISTS #{trigger_name} ON #{quoted_table(table_name)}"
-        execute "DROP FUNCTION IF EXISTS #{function_name}()"
+        run_sql "DROP TRIGGER IF EXISTS #{trigger_name} ON #{quoted_table(table_name)}"
+        run_sql "DROP FUNCTION IF EXISTS #{function_name}()"
         say "Removed write-block trigger from #{table_name}"
       end
 
@@ -124,7 +124,7 @@ module PartitionGardener
               )
           SQL
 
-          active_count = execute(active_transactions_sql).first["count"].to_i
+          active_count = run_sql(active_transactions_sql).first["count"].to_i
           if active_count.zero?
             say "No active transactions on #{table_name}"
             return true
@@ -197,7 +197,7 @@ module PartitionGardener
           WHERE #{window_predicate}
         SQL
 
-        records_to_sync = execute(count_sql).first["count"].to_i
+        records_to_sync = run_sql(count_sql).first["count"].to_i
         if records_to_sync.zero?
           say "No records to sync - tables are already in sync"
           return
@@ -237,7 +237,7 @@ module PartitionGardener
             #{conflict_update_sql}
           SQL
 
-          result = execute(sync_sql)
+          result = run_sql(sync_sql)
           synced_batch = result.cmd_tuples
           break if synced_batch.zero?
 
@@ -257,7 +257,7 @@ module PartitionGardener
           ORDER BY ordinal_position
         SQL
 
-        execute(sql).map { |row| row["column_name"] }
+        run_sql(sql).map { |row| row["column_name"] }
       end
 
       alias_method :get_table_columns, :table_columns
@@ -267,8 +267,8 @@ module PartitionGardener
         current_table = config[:current_table]
         partitioned_table = config[:partitioned_table]
 
-        current_count = execute("SELECT COUNT(*) AS count FROM #{quoted_table(current_table)}").first["count"].to_i
-        partitioned_count = execute("SELECT COUNT(*) AS count FROM #{quoted_table(partitioned_table)}").first["count"].to_i
+        current_count = run_sql("SELECT COUNT(*) AS count FROM #{quoted_table(current_table)}").first["count"].to_i
+        partitioned_count = run_sql("SELECT COUNT(*) AS count FROM #{quoted_table(partitioned_table)}").first["count"].to_i
 
         say "Count comparison:"
         say "  #{current_table}: #{current_count}"
@@ -288,7 +288,7 @@ module PartitionGardener
           FROM pg_catalog.pg_inherits
           WHERE inhparent = #{connection.quote(table_name)}::regclass
         SQL
-        execute(sql).map { |row| row["child"] }
+        run_sql(sql).map { |row| row["child"] }
       end
 
       def hot_switch_tables
@@ -306,10 +306,10 @@ module PartitionGardener
         transaction do
           apply_swap_lock_timeout!
 
-          execute "ALTER TABLE #{quoted_table(current_table)} RENAME TO #{quoted_table(old_table)}"
+          run_sql "ALTER TABLE #{quoted_table(current_table)} RENAME TO #{quoted_table(old_table)}"
           say "Renamed #{current_table} to #{old_table}"
 
-          execute "ALTER TABLE #{quoted_table(partitioned_table)} RENAME TO #{quoted_table(current_table)}"
+          run_sql "ALTER TABLE #{quoted_table(partitioned_table)} RENAME TO #{quoted_table(current_table)}"
           say "Renamed #{partitioned_table} to #{current_table}"
 
           rename_partition_children!(current_table, partitioned_table, current_table)
@@ -336,10 +336,10 @@ module PartitionGardener
         transaction do
           apply_swap_lock_timeout!
 
-          execute "ALTER TABLE #{quoted_table(current_table)} RENAME TO #{quoted_table(partitioned_table)}"
+          run_sql "ALTER TABLE #{quoted_table(current_table)} RENAME TO #{quoted_table(partitioned_table)}"
           say "Renamed #{current_table} to #{partitioned_table}"
 
-          execute "ALTER TABLE #{quoted_table(old_table)} RENAME TO #{quoted_table(current_table)}"
+          run_sql "ALTER TABLE #{quoted_table(old_table)} RENAME TO #{quoted_table(current_table)}"
           say "Renamed #{old_table} to #{current_table}"
 
           rename_partition_children!(partitioned_table, current_table, partitioned_table)
@@ -356,7 +356,7 @@ module PartitionGardener
           sql = <<~SQL
             SELECT pg_get_serial_sequence(#{connection.quote(qualified_table)}, #{connection.quote(column_name)}) AS sequence_name
           SQL
-          result = execute(sql).first
+          result = run_sql(sql).first
           sequence_name = result["sequence_name"]
           next if Blank.blank?(sequence_name)
 
@@ -400,7 +400,7 @@ module PartitionGardener
         timeout = swap_lock_timeout_setting
         return if timeout.nil?
 
-        execute "SET LOCAL lock_timeout = #{connection.quote(timeout)}"
+        run_sql "SET LOCAL lock_timeout = #{connection.quote(timeout)}"
       end
 
       def rename_partition_children!(parent_table, from_prefix, to_prefix)
@@ -409,14 +409,14 @@ module PartitionGardener
           next if partition_name.include?(to_prefix)
 
           new_partition_name = partition_name.gsub(from_prefix, to_prefix)
-          execute "ALTER TABLE #{partition} RENAME TO #{new_partition_name}"
+          run_sql "ALTER TABLE #{partition} RENAME TO #{new_partition_name}"
           say "Renamed #{partition} to #{new_partition_name}"
         end
       end
 
       def repoint_serial_sequences!(table_name, sequence_pairs)
         sequence_pairs.each do |column_name, sequence_name|
-          execute "ALTER SEQUENCE #{sequence_name} OWNED BY #{quoted_table(table_name)}.#{connection.quote_column_name(column_name)}"
+          run_sql "ALTER SEQUENCE #{sequence_name} OWNED BY #{quoted_table(table_name)}.#{connection.quote_column_name(column_name)}"
           say "Repointed #{sequence_name} to #{table_name}.#{column_name}"
         end
       end
@@ -428,6 +428,10 @@ module PartitionGardener
       def default_conflict_key(partition_key_column)
         base_key = partition_key_column.to_s.split("::").first.strip
         ["id", base_key]
+      end
+
+      def run_sql(sql)
+        connection.execute(sql)
       end
 
       def connection
