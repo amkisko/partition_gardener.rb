@@ -48,3 +48,14 @@ docs/THIRD_PARTY_LICENSE_MANIFEST.tsv
 /gemfiles/*.lock
 
 .pray/cache
+
+# Trunk
+/.trunk/actions
+/.trunk/logs
+/.trunk/notifications
+/.trunk/out
+/.trunk/tools
+/.trunk/plugins
+/.trunk/tmp
+/.trunk/user_trunk.yaml
+/.trunk/user.yaml
