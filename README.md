@@ -18,7 +18,7 @@ Complements migration gems (e.g. [pg_party](https://github.com/rkrage/pg_party))
 ### Choosing and configuring
 
 - [docs/decision_flow.md](docs/decision_flow.md) — when to partition, layout, and method choices
-- [docs/partition_landscape.md](docs/partition_landscape.md) — templates, Rails sharding, pruning, UI, aggregate snapshots, materialized views
+- [docs/partition_landscape.md](docs/partition_landscape.md) — templates, Rails sharding, pruning, routing hints, UI, aggregate snapshots, materialized views
 - [docs/partition_engines.md](docs/partition_engines.md) — portable patterns and other database engines
 - [docs/configuration.md](docs/configuration.md) — global config, registry, per-table options, JSON import
 - [docs/tooling_split.md](docs/tooling_split.md) — pg_party vs pg_partman vs Gardener
@@ -37,7 +37,7 @@ Complements migration gems (e.g. [pg_party](https://github.com/rkrage/pg_party))
 ### Application and migration
 
 - [docs/cutover.md](docs/cutover.md) — hot-switch playbook and template upgrades
-- [docs/application_contract.md](docs/application_contract.md) — writes, moves, bulk load, replicas
+- [docs/application_contract.md](docs/application_contract.md) — writes, moves, routing when the key is missing, bulk load, replicas
 - [docs/naming.md](docs/naming.md) — child partition naming catalog
 - [docs/host_testing.md](docs/host_testing.md) — CI and staging for host apps
 
@@ -138,7 +138,7 @@ See [docs/decision_flow.md](docs/decision_flow.md) for when to pick other templa
 
 `Templates.premake_monthly` (layout `:premake_monthly`) — cron-style premake bridge; migrate to sliding window.
 
-See [docs/partition_landscape.md](docs/partition_landscape.md) for the template catalog, Rails sharding, composite keys, partition pruning, UI and product surfaces, aggregate snapshots, and materialized view limits. Operations: [operations.md](docs/operations.md), [cutover.md](docs/cutover.md), [monitoring.md](docs/monitoring.md).
+See [docs/partition_landscape.md](docs/partition_landscape.md) for the template catalog, Rails sharding, composite keys, partition pruning, routing hints when the key is missing, UI and product surfaces, aggregate snapshots, and materialized view limits. Operations: [operations.md](docs/operations.md), [cutover.md](docs/cutover.md), [monitoring.md](docs/monitoring.md).
 
 ## Hot-switch migrations
 

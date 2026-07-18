@@ -119,6 +119,41 @@ Inserts must supply routable partition key values (`Event.create!(occurred_on: .
 
 If you register `partition_key_column: "created_at::date"`, keep application filters on that expression or use a generated column the planner can reason about.
 
+### Routing hints when the key is not in hand
+
+Hot paths should carry the real partition key. Many real lookups start with only a logical id, a parent foreign key, or a URL token. The planner still needs a plain predicate on the partition dimension. Use an orientation source to supply that predicate without scanning every child.
+
+Exact key (preferred):
+
+- Denormalize the parent business date (or tenant/branch) onto the child at insert time; filter and join on the child column.
+- Store the partition key next to the logical id in API cursors, job args, outbox payloads, and admin deep links.
+- Use a generated column when the key is a stable expression of an existing column the planner can see (`created_at::date` registered and filtered the same way).
+
+Orientation / range from a related record:
+
+- Parent `created_at`, `occurred_on`, or business date often bounds where the child rows live. Load the parent (or a thin projection), then query the child with a half-open window around that timestamp plus the child id.
+- Widen the window only as far as the product allows (same day, same month, parent open period). A too-narrow window misses moved or backdated rows; a too-wide window defeats pruning.
+- Prefer the parent's partition-aligned column over wall-clock "now" when the child follows the parent's period.
+
+Cached or fast-access columns:
+
+- Columns already on the hot path for other reasons (workspace id, branch, status period, cached `order_date` on line items) are valid routing inputs when they match `partition_key_column`.
+- Keep them written at insert/update with the same rules as the true key; do not derive them only in Ruby for reads while the column is null in the row.
+- Session or request context (selected month, current workspace) is a routing hint for list scopes; still persist the key on each row for writes and point lookups.
+
+Lookup caches (use sparingly):
+
+- An `id → (partition_key)` map in Redis or a side table helps global id search. Treat cache miss as a bounded scan or a rejected request, not as an unbounded parent query.
+- Invalidate or refresh when maintenance moves rows across children if the cached key can change (rare for immutable event dates; common if the key is mutable).
+
+Do not:
+
+- Call `find(id)` on a time-partitioned table and hope runtime pruning saves you when `id` is not globally unique per child.
+- Join only on `parent_id` / `id` without also constraining the child's partition key (or a denormalized copy of it).
+- Invent the key from "current month" for historical rows; orientation must come from the row's period or its parent.
+
+Gardener does not invent these hints. Migrations, models, and API contracts own them; `EXPLAIN` on production-shaped lookups proves they prune.
+
 ### Gardener `conflict_key`
 
 Registry `conflict_key` must match a parent unique index and should include the partition key, for example `%w[id occurred_on]`. Gardener uses it for idempotent keyset moves during default drain and tail rebalance. The same composite shape that satisfies PostgreSQL uniqueness is what lets maintenance target one partition without cross-child ambiguity.
@@ -247,7 +282,7 @@ After Gardener moves rows between children, refresh or recompute any materialize
 
 ### Common pitfalls (what teams report)
 
-- Admin search by `id` only on a time-partitioned table scans every month until the key encodes time or lookups include `occurred_on`
+- Admin search by `id` only on a time-partitioned table scans every month until the key encodes time or lookups include `occurred_on` (see [Routing hints when the key is not in hand](#routing-hints-when-the-key-is-not-in-hand))
 - Reporting queries over wide date ranges intentionally touch many children; that is correct behavior, not a pruning bug
 - Partition count in the thousands increases planner overhead even when pruning works; Gardener sliding window keeps the active catalog bounded
 - Relying on `default` without monitoring; Gardener drains default last, but application inserts that never match bounds still accumulate there

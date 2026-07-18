@@ -7,6 +7,7 @@ How host applications should behave around partitioned tables: queries, writes, 
 - Hot-path reads and writes include the partition key in plain predicates (no wrappers on the key column).
 - `conflict_key` columns match the parent unique index; updates and deletes use `query_constraints` when the logical id is not globally unique ([partition_landscape.md](partition_landscape.md#rails-application-contract)).
 - Inserts supply a routable partition key value so rows land in named children, not only in `default`.
+- When only a logical id or parent reference is available, resolve a routable key or bounded window from denormalized columns, parent timestamps, or request context before querying ([partition_landscape.md](partition_landscape.md#routing-hints-when-the-key-is-not-in-hand)).
 
 ## During maintenance (row moves)
 
@@ -77,6 +78,6 @@ See [host_testing.md](host_testing.md) for CI registry fixtures and integration 
 
 ## Related
 
-- [partition_landscape.md](partition_landscape.md) — pruning, UI, snapshots
+- [partition_landscape.md](partition_landscape.md) — pruning, routing hints, UI, snapshots
 - [cutover.md](cutover.md) — backfill and switch
 - [naming.md](naming.md) — child table names

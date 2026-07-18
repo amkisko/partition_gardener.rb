@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Document routing hints for lookups that lack a partition key: parent timestamps for range orientation, denormalized and cached columns, and lookup caches
+
 ## 0.3.2 (2026-07-13)
 
 - Route `HotSwitchConcern` DDL through `connection.execute` instead of `ActiveRecord::Migration#execute` so migration safety tools such as Strong Migrations do not intercept hot-switch SQL.

@@ -87,7 +87,7 @@ Operational split:
 
 Both cadences use the same Gardener primitives (`plan`, `audit`, `apply`, `run!`). The difference is when `apply` runs and how heavily the application depends on snapshots on hot paths.
 
-Partition Gardener does not replace application query contracts. When child tables must co-locate with a parent on a business date, denormalize that date onto children and require it in filters and joins. The gem does not enforce that contract; migrations and reviews do.
+Partition Gardener does not replace application query contracts. When the key is missing at the call site, supply it via denormalized columns, parent timestamps for range orientation, or other fast-access columns already on the hot path; see [partition_landscape.md](partition_landscape.md#routing-hints-when-the-key-is-not-in-hand). The gem does not enforce that contract; migrations and reviews do.
 
 ## Reliability invariants
 
