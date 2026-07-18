@@ -1,6 +1,6 @@
 # Partition Gardener
 
-[![Gem Version](https://badge.fury.io/rb/partition_gardener.svg)](https://badge.fury.io/rb/partition_gardener) [![Test Status](https://github.com/amkisko/partition_gardener.rb/actions/workflows/test.yml/badge.svg)](https://github.com/amkisko/partition_gardener.rb/actions/workflows/test.yml) [![codecov](https://codecov.io/gh/amkisko/partition_gardener.rb/graph/badge.svg)](https://codecov.io/gh/amkisko/partition_gardener.rb)
+[![Gem Version](https://badge.fury.io/rb/partition_gardener.svg)](https://badge.fury.io/rb/partition_gardener) [![Test Status](https://github.com/amkisko/partition_gardener.rb/actions/workflows/test.yml/badge.svg)](https://github.com/amkisko/partition_gardener.rb/actions/workflows/test.yml) [![codecov](https://codecov.io/gh/amkisko/partition_gardener.rb/graph/badge.svg)](https://app.codecov.io/github/amkisko/partition_gardener.rb)
 
 PostgreSQL partition lifecycle: archive, current, and future zones, heat-driven splits inside the active window, cursor-based rebalance, mandatory default drain, and hot-switch migration helpers. Rails-integrated by default; works standalone with `pg` and a JSON registry.
 
@@ -190,6 +190,19 @@ bundle exec rspec --exclude-pattern "spec/integration/**/*_spec.rb"
 # Integration only (requires PostgreSQL)
 INTEGRATION=1 DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/partition_gardener_test bundle exec rake spec:integration
 ```
+
+## Links
+
+- [GitHub](https://github.com/amkisko/partition_gardener.rb)
+- [GitLab](https://gitlab.com/amkisko/partition_gardener.rb)
+- [RubyGems](https://rubygems.org/gems/partition_gardener)
+- [Versions Atom](https://rubygems.org/gems/partition_gardener/versions.atom) (feed id `11544106111602`)
+- [libraries.io](https://libraries.io/rubygems/partition_gardener)
+- [Deps.dev](https://deps.dev/rubygems/partition_gardener)
+- [SonarCloud](https://sonarcloud.io/project/overview?id=amkisko_partition_gardener.rb)
+- [Snyk](https://snyk.io/test/github/amkisko/partition_gardener.rb)
+- [Codecov](https://app.codecov.io/github/amkisko/partition_gardener.rb)
+- [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/amkisko/partition_gardener.rb)
 
 ## License
 

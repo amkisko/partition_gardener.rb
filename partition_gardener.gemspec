@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   repository_url = "https://github.com/amkisko/partition_gardener.rb"
   spec.homepage = repository_url
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 3.2.0"
+  spec.required_ruby_version = ">= 3.4"
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
     Dir[
