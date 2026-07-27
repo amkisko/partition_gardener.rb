@@ -4,7 +4,7 @@ Partition Gardener implements runtime maintenance for PostgreSQL native declarat
 
 The problems Gardener solves are not PostgreSQL-only. Large tables split by time or category need the same operational invariants on every engine that supports partition-shaped lifecycle: bounded catalog size, headroom for future inserts, retention without bulk delete, and a single maintainer that reconciles layout against policy. This page maps those portable patterns to other database engines, states where Gardener's current implementation applies as-is, and where teams should borrow the design without expecting this gem to run unchanged.
 
-Use this page with [partition_landscape.md](partition_landscape.md) (templates and PostgreSQL scope), [decision_flow.md](decision_flow.md) (when to partition), and [tooling_split.md](tooling_split.md) (creation vs runtime maintenance).
+Use this page with [partition_landscape.md](partition_landscape.md) (templates, pruning, routing, PostgreSQL scope), [decision_flow.md](decision_flow.md) (when to partition), [application_contract.md](application_contract.md) (host app queries and writes), and [tooling_split.md](tooling_split.md) (creation vs runtime maintenance).
 
 ## Portable patterns Gardener encodes
 
@@ -78,7 +78,7 @@ Patterns that transfer from Gardener without semantic change:
 - Retention by `DROP TABLE` on detached or attached partition children
 - Composite primary key including partition key for uniqueness and pruning
 - List-then-range composite trees for geo or branch plus time
-- Application contract: filters on partition key, UI scoped to period or tenant ([partition_landscape.md](partition_landscape.md#rails-application-contract))
+- Application contract: filters on partition key, UI scoped to period or tenant ([partition_landscape.md](partition_landscape.md#rails-application-contract), [application_contract.md](application_contract.md))
 
 Gardener-specific gaps on YugabyteDB:
 
@@ -400,15 +400,15 @@ CockroachDB, ClickHouse, and warehouses need different products (TTL-first or wa
 
 ## Operator checklist when the engine is not PostgreSQL
 
-Keep from Gardener regardless of engine:
+Keep from Gardener regardless of engine (application-side detail: [application_contract.md](application_contract.md), routing: [partition_landscape.md](partition_landscape.md#routing-layers)):
 
 - Partition key in all unique constraints and hot-path queries
-- One maintainer per table; no overlapping premake crons
+- One maintainer per table; no overlapping premake crons ([tooling_split.md](tooling_split.md))
 - Retention by removing whole partitions or TTL, not unbounded DELETE
 - Plan or dry-run before destructive DDL
-- Snapshot totals for cross-period aggregates
+- Snapshot totals for cross-period aggregates ([partition_landscape.md](partition_landscape.md#aggregates-totals-and-snapshots))
 - UI and APIs default to partition-scoped windows ([partition_landscape.md](partition_landscape.md#ui-and-product-surfaces))
-- After large data movement, refresh statistics and dependent rollups
+- After large data movement, refresh statistics, dependent rollups, and routing mappings when keys can change
 
 Replace Gardener-specific steps:
 

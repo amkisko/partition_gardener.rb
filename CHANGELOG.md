@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Document routing hints for lookups that lack a partition key: parent timestamps for range orientation, denormalized and cached columns, and lookup caches
+- Expand routing documentation: routing layers, recovery ladder, parent timestamp example, window sizing, global index tables, time-embedded ids, two-tier composite hints, and post-maintenance cache invalidation ([partition_landscape.md](docs/partition_landscape.md))
+- Documentation audit: remove duplicate portable routing section from partition engines guide; consolidate sharded-app guidance; tighten cross-links between decision flow, application contract, and landscape docs
 
 ## 0.3.2 (2026-07-13)
 

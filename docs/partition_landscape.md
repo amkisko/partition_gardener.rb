@@ -2,6 +2,8 @@
 
 Partition Gardener targets PostgreSQL native declarative partitioning with gardener-owned maintenance plans. This page maps industry patterns to what the gem implements, documents experimental layouts, and lists what belongs outside the gem.
 
+Canonical home for routing (layers, recovery ladder, hints), pruning, UI scoping, and aggregate snapshots. Host query and write obligations live in [application_contract.md](application_contract.md). Cross-engine portability lives in [partition_engines.md](partition_engines.md).
+
 ## Implemented templates
 
 sliding_window_monthly — layout sliding_window, bucket month. Default time-series on a date or timestamp column.
@@ -71,6 +73,8 @@ The default railtie uses `ActiveRecord::Base.connection`. Sharded models should 
 
 Choose Rails sharding when the bottleneck is total row volume or tenant isolation across servers. Choose Gardener templates when the bottleneck is partition catalog size, retention, or hot-month splits inside one database.
 
+On hot paths carry both signals: shard routing first (`connected_to(shard:)`), then partition key filters inside that shard. Losing either one pushes the system toward broad scans. Gardener maintenance runs per shard connection ([operations.md](operations.md#sharded-registries)); it does not change the query contract ([application_contract.md](application_contract.md#sharded-applications)).
+
 ## Composite keys and partition pruning
 
 Partitioning only speeds up queries when PostgreSQL can skip child tables. That is partition pruning: the planner uses partition bounds and your `WHERE` clause to exclude partitions that cannot hold matching rows. Without pruning, one large scan becomes many smaller scans and latency often gets worse.
@@ -119,32 +123,86 @@ Inserts must supply routable partition key values (`Event.create!(occurred_on: .
 
 If you register `partition_key_column: "created_at::date"`, keep application filters on that expression or use a generated column the planner can reason about.
 
+### Routing layers
+
+Partition performance depends on choosing the right slice before PostgreSQL plans the query. Think in layers from outside in:
+
+1. Cluster or shard — Rails `connected_to(shard:)`, tenant resolver middleware, or a distributed coordinator (Citus). Picks which database server or node set holds the row.
+2. Partition dimension — plain `WHERE` on `partition_key_column` so declarative pruning limits which child tables participate.
+3. Missing-key recovery — when the call site only has a logical id or parent reference, derive a routable key or bounded window before querying the fact table (below).
+4. Inside one child — btree indexes, heat splits, and Gardener tail layout; pruning already selected the child.
+
+Gardener maintains layer 4 and the catalog for layer 2. Layers 1 and 3 are application-owned; the gem does not inject routing middleware or enforce predicates.
+
 ### Routing hints when the key is not in hand
 
-Hot paths should carry the real partition key. Many real lookups start with only a logical id, a parent foreign key, or a URL token. The planner still needs a plain predicate on the partition dimension. Use an orientation source to supply that predicate without scanning every child.
+Hot paths should carry the real partition key. Many lookups start with only a logical id, a parent foreign key, or a URL token. The planner still needs a plain predicate on the partition dimension. Use an orientation source to supply that predicate without scanning every child.
 
-Exact key (preferred):
+Recovery ladder (prefer earlier steps):
+
+1. Exact key on the row or in the request (denormalized column, generated column, cursor token).
+2. Carry the key beside the logical id (API, jobs, admin links).
+3. Orient from a related record (parent timestamp or business period).
+4. Fast-access column or session context already on the hot path.
+5. Durable mapping table or cache (`id → partition_key`).
+6. Bounded scan of recent buckets (last resort; cap parallelism and bucket count).
+
+#### Exact key (preferred)
 
 - Denormalize the parent business date (or tenant/branch) onto the child at insert time; filter and join on the child column.
-- Store the partition key next to the logical id in API cursors, job args, outbox payloads, and admin deep links.
+- Store the partition key next to the logical id in API cursors, job args, outbox payloads, and admin deep links. Opaque tokens may encode `(id, partition_key)` so clients never send id-only.
 - Use a generated column when the key is a stable expression of an existing column the planner can see (`created_at::date` registered and filtered the same way).
 
-Orientation / range from a related record:
+#### Orientation / range from a related record
 
-- Parent `created_at`, `occurred_on`, or business date often bounds where the child rows live. Load the parent (or a thin projection), then query the child with a half-open window around that timestamp plus the child id.
-- Widen the window only as far as the product allows (same day, same month, parent open period). A too-narrow window misses moved or backdated rows; a too-wide window defeats pruning.
-- Prefer the parent's partition-aligned column over wall-clock "now" when the child follows the parent's period.
+Parent `created_at`, `occurred_on`, or business date often bounds where child rows live. Load the parent (or a thin projection), then query the child with a half-open window around that timestamp plus the child id.
 
-Cached or fast-access columns:
+```ruby
+order = Order.select(:id, :ordered_on).find(order_id)
+LineItem.where(
+  order_id: order.id,
+  occurred_on: order.ordered_on...order.ordered_on + 1.day
+)
+```
 
-- Columns already on the hot path for other reasons (workspace id, branch, status period, cached `order_date` on line items) are valid routing inputs when they match `partition_key_column`.
+Window sizing:
+
+- Same calendar day when children are daily and backdating is rare.
+- Same month when children are monthly and the parent period matches the child's bucket.
+- Parent open period (subscription term, fiscal quarter) when product rules tie children to that span.
+- Widen only after a miss inside the first window; log and alert repeated widens.
+
+Prefer the parent's partition-aligned column over wall-clock "now" when the child follows the parent's period. Timezone boundaries and backdated parent updates can shift the correct bucket; test with production-shaped dates.
+
+#### Cached or fast-access columns
+
+Columns already on the hot path for other reasons (workspace id, branch, status period, cached `order_date` on line items) are valid routing inputs when they match `partition_key_column`.
+
 - Keep them written at insert/update with the same rules as the true key; do not derive them only in Ruby for reads while the column is null in the row.
 - Session or request context (selected month, current workspace) is a routing hint for list scopes; still persist the key on each row for writes and point lookups.
 
-Lookup caches (use sparingly):
+#### Global index and lookup caches
 
-- An `id → (partition_key)` map in Redis or a side table helps global id search. Treat cache miss as a bounded scan or a rejected request, not as an unbounded parent query.
+A narrow mapping table (`logical_id`, `partition_key`, optional `shard_key`) or Redis entry supports global id search and admin deep links without scanning every child.
+
+- Treat cache or index miss as a bounded scan of recent buckets or a rejected request, not as an unbounded parent query.
 - Invalidate or refresh when maintenance moves rows across children if the cached key can change (rare for immutable event dates; common if the key is mutable).
+- After a Gardener run with high `rows_moved`, reconcile mapping rows for affected buckets.
+
+#### Time-embedded identifiers
+
+ULID, KSUID, and Snowflake-style ids embed creation time. They suggest a default orientation window without a parent lookup, but they are not a substitute for `partition_key_column` on the row unless the partition bound is derived from the same clock and registered consistently. See [UUIDv7 and encoded-time keys](#uuidv7-and-encoded-time-keys).
+
+#### Two-tier composite layouts
+
+`composite_list_range` and similar templates partition first by LIST (tenant, region) then RANGE (month). Partial hints still prune one dimension:
+
+- Tenant id alone limits LIST branches; add a month range inside that tenant for RANGE children.
+- Month alone without tenant may scan every LIST branch; always carry the list key on hot paths for multi-tenant trees.
+
+#### Verify routing
+
+Run `EXPLAIN (ANALYZE, BUFFERS)` on production-shaped lookups. Pruning-capable plans show `Append` with only relevant children or `Subplans Removed: N`. Sequential scans on every child mean the contract is broken.
 
 Do not:
 
@@ -152,15 +210,11 @@ Do not:
 - Join only on `parent_id` / `id` without also constraining the child's partition key (or a denormalized copy of it).
 - Invent the key from "current month" for historical rows; orientation must come from the row's period or its parent.
 
-Gardener does not invent these hints. Migrations, models, and API contracts own them; `EXPLAIN` on production-shaped lookups proves they prune.
+Gardener does not invent these hints. Migrations, models, and API contracts own them; reviews and `EXPLAIN` prove they prune.
 
 ### Gardener `conflict_key`
 
 Registry `conflict_key` must match a parent unique index and should include the partition key, for example `%w[id occurred_on]`. Gardener uses it for idempotent keyset moves during default drain and tail rebalance. The same composite shape that satisfies PostgreSQL uniqueness is what lets maintenance target one partition without cross-child ambiguity.
-
-### Sharded apps
-
-With Rails `connects_to` sharding, carry both signals on hot paths: shard routing first (`connected_to(shard:)`), then partition key filters inside that shard. Losing either one pushes the system toward broad scans. Partition Gardener on each shard does not change that query contract.
 
 ### UI and product surfaces
 
@@ -314,7 +368,7 @@ Hypertables use chunk policies and compression, not declarative RANGE children. 
 
 ### Citus distributed tables
 
-Citus distributes tables across worker nodes inside PostgreSQL with its own shard metadata and rebalance tooling. That is neither Rails `connects_to` sharding nor native declarative partitioning on a single instance. Gardener does not drive Citus shard placement.
+Citus distributes tables across worker nodes inside PostgreSQL with its own shard metadata and rebalance tooling. That is neither Rails `connects_to` sharding nor native declarative partitioning on a single instance. Citus sits in [routing layer](#routing-layers) 1 (distribution column picks the worker); Gardener-style declarative children can still exist per worker for retention. Gardener does not drive Citus shard placement.
 
 ### Other database engines
 

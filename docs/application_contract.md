@@ -7,7 +7,8 @@ How host applications should behave around partitioned tables: queries, writes, 
 - Hot-path reads and writes include the partition key in plain predicates (no wrappers on the key column).
 - `conflict_key` columns match the parent unique index; updates and deletes use `query_constraints` when the logical id is not globally unique ([partition_landscape.md](partition_landscape.md#rails-application-contract)).
 - Inserts supply a routable partition key value so rows land in named children, not only in `default`.
-- When only a logical id or parent reference is available, resolve a routable key or bounded window from denormalized columns, parent timestamps, or request context before querying ([partition_landscape.md](partition_landscape.md#routing-hints-when-the-key-is-not-in-hand)).
+- When only a logical id or parent reference is available, follow the recovery ladder in [partition_landscape.md](partition_landscape.md#routing-hints-when-the-key-is-not-in-hand).
+- After maintenance with high `rows_moved`, refresh `id → partition_key` mappings when the partition key can change.
 
 ## During maintenance (row moves)
 
@@ -55,7 +56,7 @@ Gardener does not add or remove FKs during maintenance.
 
 ## Sharded applications
 
-Compose Rails shard routing with per-shard partition filters:
+Shard plus partition filters on hot paths; see [Rails horizontal sharding](partition_landscape.md#rails-horizontal-sharding). Per-shard maintenance: [operations.md](operations.md#sharded-registries).
 
 ```ruby
 ApplicationRecord.connected_to(shard: :tenant_a) do
@@ -63,12 +64,12 @@ ApplicationRecord.connected_to(shard: :tenant_a) do
 end
 ```
 
-Maintenance runs per shard; registry JSON may differ per shard only if layouts differ (unusual).
+Registry JSON may differ per shard only if layouts differ (unusual).
 
 ## Admin and operator surfaces
 
 - Default filters: current month or selected tenant, not all history.
-- Global id search is an advanced, slow path; require date or tenant hint.
+- Global id search is an advanced, slow path; require date or tenant hint, or resolve through a mapping table before scanning children.
 - Export flows chunk by bucket; show progress per period.
 - Totals read from snapshot tables with `computed_at`, not live `SUM` across all children or a stale materialized view over the full fact table ([partition_landscape.md](partition_landscape.md#materialized-views)).
 
@@ -78,6 +79,6 @@ See [host_testing.md](host_testing.md) for CI registry fixtures and integration 
 
 ## Related
 
-- [partition_landscape.md](partition_landscape.md) — pruning, routing hints, UI, snapshots
+- [partition_landscape.md](partition_landscape.md) — pruning, routing layers and hints, UI, snapshots
 - [cutover.md](cutover.md) — backfill and switch
 - [naming.md](naming.md) — child table names
