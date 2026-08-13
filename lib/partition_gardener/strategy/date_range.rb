@@ -136,6 +136,10 @@ module PartitionGardener
         "#{partition_key_column} >= #{connection.quote(start_range)}::date AND #{partition_key_column} < #{connection.quote(end_range)}::date"
       end
 
+      def beginning_of_bucket(bucket)
+        DateBucket.beginning_of_bucket(bucket.to_date, date_bucket)
+      end
+
       def archive_bucket?(bucket)
         beginning_of_bucket(bucket) < active_window[:start]
       end
@@ -200,10 +204,6 @@ module PartitionGardener
 
       def split_row_threshold
         @config.fetch(:split_row_threshold, FUTURE_MONTH_PARTITION_ROW_THRESHOLD)
-      end
-
-      def beginning_of_bucket(bucket)
-        DateBucket.beginning_of_bucket(bucket.to_date, date_bucket)
       end
 
       def end_of_bucket(bucket)

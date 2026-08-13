@@ -11,11 +11,11 @@ module PartitionGardener
     def run!
       report_audit_warnings
       ensure_default_partition
+      rebalance_tail!
       unless MaintenanceBackend.hybrid?(@config)
         finalize_archive_partitions
         apply_archive_retention!
       end
-      rebalance_tail!
       drain_default_partition
     end
 
@@ -115,6 +115,8 @@ module PartitionGardener
     end
 
     def finalize_archive_from_source!(identifier, source_partition_name)
+      return if archive_attach_overlaps_current?(identifier)
+
       partition_name = archive_partition_name(identifier)
       where_condition = strategy.bucket_where_condition(identifier)
 
@@ -212,6 +214,18 @@ module PartitionGardener
           Connection.count_rows_in_partition(partition_name, strategy.bucket_where_condition(identifier))
         end
       end
+    end
+
+    def archive_attach_overlaps_current?(identifier)
+      return false unless strategy.is_a?(Strategy::DateRange)
+
+      current_lower_bound = Connection.current_partition_lower_bound(
+        table_name,
+        current_partition_name(table_name)
+      )
+      return false unless current_lower_bound
+
+      strategy.beginning_of_bucket(identifier) >= current_lower_bound
     end
 
     def ensure_archive_partition_attached!(identifier, partition_name:, source_partition_name:)

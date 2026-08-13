@@ -62,4 +62,25 @@ RSpec.describe "sliding window maintenance", :integration do
     gaps = PartitionGardener::GapDetection.call(table_name)
     expect(gaps).to be_empty
   end
+
+  context "when today rolls from July into August" do
+    let(:today) { Date.new(2026, 7, 15) }
+
+    it "attaches the July archive and a current partition from August" do
+      insert_row!(table_name, id: 1, occurred_on: Date.new(2026, 7, 10))
+
+      run_maintenance!
+
+      PartitionGardener::Integration::Database.configure_gardener!(today: Date.new(2026, 8, 13))
+      run_maintenance!
+
+      july_partition = month_partition_name(table_name, Date.new(2026, 7, 1))
+      expect(partition_attached?(table_name, july_partition)).to be(true)
+      expect(count_rows(july_partition)).to eq(1)
+      expect(count_rows(default_name(table_name))).to eq(0)
+      expect(
+        PartitionGardener::Connection.current_partition_lower_bound(table_name, current_name(table_name))
+      ).to eq(Date.new(2026, 8, 1))
+    end
+  end
 end
