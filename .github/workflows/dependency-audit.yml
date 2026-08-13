@@ -29,6 +29,6 @@ jobs:
           while IFS= read -r -d '' lockfile; do
             echo "==> ${lockfile}"
             bundle-audit check --no-update --gemfile-lock "${lockfile}" || audit_status=1
-          done < <(find . -name Gemfile.lock -print0)
+          done < <(find . \( -name Gemfile.lock -o -name '*.gemfile.lock' \) -print0)
           exit "${audit_status}"
 
