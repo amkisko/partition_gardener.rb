@@ -46,4 +46,28 @@ RSpec.describe PartitionGardener::DateRangeMaintenance do
     )
     expect(attach_calls).to eq(2)
   end
+
+  it "skips archive attach when the bucket starts at or after the current lower bound" do
+    identifier = Date.new(2026, 7, 1)
+    allow(PartitionGardener.configuration).to receive(:today).and_return(Date.new(2026, 8, 13))
+    allow(PartitionGardener::Connection).to receive(:current_partition_lower_bound)
+      .with("events", "events_current")
+      .and_return(Date.new(2026, 7, 1))
+    allow(PartitionGardener::Connection).to receive_messages(
+      partition_attached?: false,
+      partition_exists?: false,
+      count_rows_in_partition: 0
+    )
+    allow(executor).to receive(:create_partition)
+    allow(executor).to receive(:attach_partition)
+    allow(executor).to receive(:ensure_detached_partition_table!)
+    allow(executor).to receive(:drain_rows_between_partitions!)
+    allow(executor).to receive(:move_rows_to_parent_partition!)
+
+    maintenance.send(:finalize_archive_from_source!, identifier, "events_current")
+
+    expect(executor).not_to have_received(:create_partition)
+    expect(executor).not_to have_received(:attach_partition)
+    expect(executor).not_to have_received(:move_rows_to_parent_partition!)
+  end
 end
