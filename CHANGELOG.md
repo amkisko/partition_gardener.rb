@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.3 (2026-08-13)
+
 - Roll the sliding-window current partition before attaching the prior month's archive so a month rollover detaches the old current span and attaches that month as its own child
 - Skip archive attach when a monthly bucket starts at or after the attached current partition lower bound
 - Expand routing documentation: routing layers, recovery ladder, parent timestamp example, window sizing, global index tables, time-embedded ids, two-tier composite hints, and post-maintenance cache invalidation ([partition_landscape.md](docs/partition_landscape.md))
