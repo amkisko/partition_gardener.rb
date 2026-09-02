@@ -61,6 +61,8 @@ module PartitionGardener
         warnings << "partition gap: #{gap.message}"
       end
 
+      warnings.concat(ChildColumnAlign.lagging_child_warnings(@table_name))
+
       AuditResult.new(
         table_name: @table_name,
         partitioned: true,

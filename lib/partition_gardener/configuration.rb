@@ -11,6 +11,7 @@ module PartitionGardener
       :incremental_rebalance,
       :run_record_enabled,
       :retention_detach_concurrently,
+      :align_child_columns,
       :strict_maintenance_backend_validation,
       :current_run_metrics
 
@@ -29,6 +30,7 @@ module PartitionGardener
       @run_record_enabled = true
       @run_record_store = nil
       @retention_detach_concurrently = false
+      @align_child_columns = true
       @strict_maintenance_backend_validation = false
       @current_run_metrics = nil
     end

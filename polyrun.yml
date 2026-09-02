@@ -19,6 +19,7 @@ partition:
           - rebalance_resume
           - advisory_lock
           - executor_move
+          - child_column_align
           - composite_maintenance
           - hot_switch
         default_priority: 5

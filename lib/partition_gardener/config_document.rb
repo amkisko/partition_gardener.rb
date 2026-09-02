@@ -22,6 +22,7 @@ module PartitionGardener
       retention_apply
       retention_keep_table
       retention_detach_concurrently
+      align_child_columns
       hash_modulus
       maintenance_backend
       incremental_rebalance

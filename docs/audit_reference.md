@@ -36,6 +36,8 @@ Horizon warning threshold: 30 days (`Audit::HORIZON_WARNING_DAYS`). High child c
 
 `partition gap: no attached tail partition extends to MAXVALUE` — missing future/open tail. `apply` to attach `_future`.
 
+`child {name} is missing column {columns} from parent {table}` — a LIKE or detached child lacks ordinary columns added on the parent later. `apply` adds those columns then attaches (default). Set `align_child_columns: false` to fail fast.
+
 Gap objects include `range_start`, `range_end`, and `message`.
 
 ## Plan report
