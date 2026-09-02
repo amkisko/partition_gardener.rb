@@ -12,6 +12,17 @@ RSpec.describe PartitionGardener::Templates do
     allow(PartitionGardener::Connection).to receive(:connection).and_return(quoting_connection)
   end
 
+  describe ".normalize" do
+    it "marks a directly registered partition name formatter as custom" do
+      config = described_class.normalize(
+        layout: :premake_monthly,
+        partition_name_format: ->(_identifier) { "events_custom" }
+      )
+
+      expect(config[:partition_name_format_is_custom]).to be(true)
+    end
+  end
+
   describe ".premake_monthly" do
     it "builds a legacy premake config" do
       config = described_class.premake_monthly(

@@ -70,6 +70,7 @@ module PartitionGardener
         )
       SQL
       @connection.execute(sql)
+      align_child_columns!(table_name, partition_name)
 
       conflict_columns = conflict_key.map { |column| @connection.quote_column_name(column) }.join(", ")
       sql = <<~SQL
@@ -77,7 +78,6 @@ module PartitionGardener
         ON #{quoted_table(partition_name)} (#{conflict_columns})
       SQL
       @connection.execute(sql)
-      align_child_columns!(table_name, partition_name)
     end
 
     def move_all_rows_between_partitions!(source_partition_name, destination_partition_name, conflict_key, cursor_columns: conflict_key)

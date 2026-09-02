@@ -71,4 +71,16 @@ RSpec.describe PartitionGardener::ConfigDocument do
       )
     }.to raise_error(ArgumentError, /layout "composite" is not supported in JSON import/)
   end
+
+  it "rejects a non-boolean align_child_columns option" do
+    expect {
+      described_class.validate_registry_document!(
+        "table_name" => "events",
+        "layout" => "premake_monthly",
+        "partition_key_column" => "occurred_on",
+        "conflict_key" => %w[id occurred_on],
+        "align_child_columns" => "false"
+      )
+    }.to raise_error(ArgumentError, /align_child_columns must be true or false/)
+  end
 end

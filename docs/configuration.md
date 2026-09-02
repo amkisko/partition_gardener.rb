@@ -166,7 +166,7 @@ All templates accept shared options passed through to the registry hash:
 
 `retention_detach_concurrently` (default: global default) — per-table override for concurrent detach.
 
-`align_child_columns` (default: global default) — per-table override. Additive only: `ADD COLUMN` for missing ordinary columns (skip identity and generated), copy type and default, `SET NOT NULL` when the child is empty or the column has a default. Existing types, extra child columns, and constraints stay as they are.
+`align_child_columns` (default: global default) — per-table override. Additive only: add missing ordinary columns in one statement (skip identity and generated), preserving type, non-default collation, default, and `NOT NULL`. If existing rows cannot satisfy `NOT NULL`, PostgreSQL rejects the complete alignment and leaves the child unchanged. Existing types, extra child columns, and other constraints stay as they are.
 
 `maintenance_backend` (default: `:gardener`) — `:gardener`, `:pg_partman`, or `:hybrid_layout_only`.
 

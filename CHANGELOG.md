@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Align LIKE and detached children with additive parent columns before `ATTACH PARTITION`, so attach succeeds after a later `ADD COLUMN`. Audit warns when a child still lags. Set `align_child_columns: false` to fail fast instead.
+- Align LIKE and detached children with additive parent columns before `ATTACH PARTITION`, preserving type, collation, default, and `NOT NULL` atomically. Audit warns when a managed child still lags. Set `align_child_columns: false` to fail fast instead.
 
 ## 0.3.3 (2026-08-13)
 

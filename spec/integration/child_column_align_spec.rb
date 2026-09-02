@@ -75,13 +75,74 @@ RSpec.describe "child column align on attach", :integration do
   end
 
   it "aligns an existing LIKE table before attach after CREATE TABLE IF NOT EXISTS" do
-    executor.ensure_detached_partition_table!(table_name, child_name, conflict_key: %w[id occurred_on])
+    executor.ensure_detached_partition_table!(
+      table_name,
+      child_name,
+      conflict_key: %w[id occurred_on extra_attr]
+    )
 
     expect(table_column_names(child_name)).to include("extra_attr")
 
     executor.attach_partition(table_name, child_name, "FROM ('2024-06-01') TO ('2024-07-01')")
 
     expect(partition_attached?(table_name, child_name)).to be(true)
+  end
+
+  it "preserves a non-default collation when adding a missing column" do
+    connection.execute(<<~SQL)
+      ALTER TABLE #{quote_table(table_name)} ADD COLUMN localized_label text COLLATE "C"
+    SQL
+
+    executor.attach_partition(table_name, child_name, "FROM ('2024-06-01') TO ('2024-07-01')")
+
+    expect(partition_attached?(table_name, child_name)).to be(true)
+  end
+
+  it "fails before mutating a populated child for a NOT NULL column without a default" do
+    connection.execute(<<~SQL)
+      INSERT INTO #{quote_table(child_name)} (id, occurred_on) VALUES (1, '2024-06-15')
+    SQL
+    connection.execute(<<~SQL)
+      ALTER TABLE #{quote_table(table_name)} ADD COLUMN required_text text NOT NULL
+    SQL
+
+    expect {
+      executor.attach_partition(table_name, child_name, "FROM ('2024-06-01') TO ('2024-07-01')")
+    }.to raise_error(ActiveRecord::StatementInvalid, /required_text.*null|contains null values/i)
+
+    expect(table_column_names(child_name)).not_to include("extra_attr", "required_text")
+  end
+
+  it "does not audit an unrelated table that only shares the parent prefix" do
+    unrelated_name = "#{table_name}_backup"
+    connection.execute(<<~SQL)
+      CREATE TABLE #{quote_table(unrelated_name)} (id bigint)
+    SQL
+
+    warnings = PartitionGardener::Audit.call(table_name).warnings
+
+    expect(warnings.join).not_to include(unrelated_name)
+  ensure
+    drop_table_cascade!(unrelated_name)
+  end
+
+  it "keeps prefix discovery for a custom partition name formatter" do
+    custom_child_name = "#{table_name}_period_june"
+    connection.execute(<<~SQL)
+      CREATE TABLE #{quote_table(custom_child_name)} (LIKE #{quote_table(child_name)} INCLUDING ALL)
+    SQL
+    custom_config = PartitionGardener::Templates.premake_monthly(
+      table_name: table_name,
+      partition_key_column: "occurred_on",
+      conflict_key: %w[id occurred_on],
+      partition_name_format: ->(_identifier) { custom_child_name }
+    )
+
+    warnings = PartitionGardener::Audit.call(table_name, config: custom_config).warnings
+
+    expect(warnings.join).to include(custom_child_name)
+  ensure
+    drop_table_cascade!(custom_child_name)
   end
 
   it "sets NOT NULL on a missing parent column when the child is empty" do
