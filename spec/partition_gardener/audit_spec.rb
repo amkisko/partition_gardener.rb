@@ -8,6 +8,7 @@ RSpec.describe PartitionGardener::Audit do
     PartitionGardener.configure do |configuration|
       configuration.today_resolver = -> { today }
     end
+    allow(PartitionGardener::ChildColumnAlign).to receive(:lagging_child_warnings).and_return([])
   end
 
   it "reports when the table is not partitioned" do
@@ -45,5 +46,21 @@ RSpec.describe PartitionGardener::Audit do
 
     expect(result.horizon_days).to eq(15)
     expect(result.warnings).to include("partition horizon is 15 days ahead (below 30)")
+  end
+
+  it "warns when an unattached child lags parent columns" do
+    allow(PartitionGardener::Connection).to receive(:table_is_partitioned?).with(table_name).and_return(true)
+    allow(PartitionGardener::Connection).to receive(:partition_exists?).with("events_default").and_return(true)
+    allow(PartitionGardener::Connection).to receive(:count_rows_in_partition_table).with("events_default").and_return(0)
+    allow(PartitionGardener::Connection).to receive(:attached_partitions).with(table_name).and_return([])
+    allow(PartitionGardener::ChildColumnAlign).to receive(:lagging_child_warnings)
+      .with(table_name)
+      .and_return(["child events_2024_06 is missing column extra_attr from parent events"])
+
+    result = described_class.call(table_name)
+
+    expect(result.warnings).to include(
+      "child events_2024_06 is missing column extra_attr from parent events"
+    )
   end
 end

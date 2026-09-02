@@ -4,6 +4,9 @@ module PartitionGardener
 
     def normalize(config)
       config = config.dup
+      unless config.key?(:partition_name_format_is_custom)
+        config[:partition_name_format_is_custom] = config.key?(:partition_name_format)
+      end
       config[:layout] ||= :sliding_window
       config[:bucket] ||= :month if date_layout?(config[:layout])
       config
@@ -106,6 +109,7 @@ module PartitionGardener
         conflict_key: conflict_key,
         premake_months: premake_months,
         maintenance_backend: options.fetch(:maintenance_backend, :gardener),
+        partition_name_format_is_custom: options.key?(:partition_name_format),
         partition_name_format: options.fetch(:partition_name_format) {
           ->(identifier) { DateBucket.partition_name(table_name, identifier, :month) }
         },
@@ -128,6 +132,7 @@ module PartitionGardener
         partition_key_column: partition_key_column,
         conflict_key: conflict_key,
         active_years: active_years,
+        partition_name_format_is_custom: options.key?(:partition_name_format),
         partition_name_format: options.fetch(:partition_name_format) {
           ->(identifier) { DateBucket.partition_name(table_name, identifier, :year) }
         },
@@ -301,6 +306,7 @@ module PartitionGardener
         :partition_key_column => partition_key_column,
         :conflict_key => conflict_key,
         active_key => active_value,
+        :partition_name_format_is_custom => options.key?(:partition_name_format),
         :partition_name_format => options.fetch(:partition_name_format) {
           ->(identifier) { DateBucket.partition_name(table_name, identifier, bucket) }
         },

@@ -5,16 +5,26 @@ module PartitionGardener
     def self.for_config(config, connection: Connection.connection)
       new(
         connection: connection,
-        batch_size: config.fetch(:move_batch_size, MOVE_BATCH_SIZE)
+        batch_size: config.fetch(:move_batch_size, MOVE_BATCH_SIZE),
+        align_child_columns: config.fetch(
+          :align_child_columns,
+          PartitionGardener.configuration.align_child_columns
+        )
       )
     end
 
-    def initialize(connection: Connection.connection, batch_size: MOVE_BATCH_SIZE)
+    def initialize(
+      connection: Connection.connection,
+      batch_size: MOVE_BATCH_SIZE,
+      align_child_columns: PartitionGardener.configuration.align_child_columns
+    )
       @connection = connection
       @batch_size = batch_size
+      @align_child_columns = align_child_columns
     end
 
     def attach_partition(table_name, partition_name, for_values_clause)
+      align_child_columns!(table_name, partition_name)
       sql = <<~SQL
         ALTER TABLE #{quoted_table(table_name)} ATTACH PARTITION #{quoted_table(partition_name)}
         FOR VALUES #{for_values_clause}
@@ -23,6 +33,7 @@ module PartitionGardener
     end
 
     def attach_default_partition(table_name, partition_name)
+      align_child_columns!(table_name, partition_name)
       sql = <<~SQL
         ALTER TABLE #{quoted_table(table_name)} ATTACH PARTITION #{quoted_table(partition_name)} DEFAULT
       SQL
@@ -59,6 +70,7 @@ module PartitionGardener
         )
       SQL
       @connection.execute(sql)
+      align_child_columns!(table_name, partition_name)
 
       conflict_columns = conflict_key.map { |column| @connection.quote_column_name(column) }.join(", ")
       sql = <<~SQL
@@ -140,6 +152,12 @@ module PartitionGardener
     end
 
     private
+
+    def align_child_columns!(parent_table, child_table)
+      return unless @align_child_columns
+
+      ChildColumnAlign.new(connection: @connection).align!(parent_table, child_table)
+    end
 
     def quoted_table(name)
       @connection.quote_table_name(name)

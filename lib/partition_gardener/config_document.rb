@@ -22,6 +22,7 @@ module PartitionGardener
       retention_apply
       retention_keep_table
       retention_detach_concurrently
+      align_child_columns
       hash_modulus
       maintenance_backend
       incremental_rebalance
@@ -173,6 +174,7 @@ module PartitionGardener
       validate_registry_conflict_key!(document)
       validate_registry_optional_bucket!(document)
       validate_registry_optional_maintenance_backend!(document)
+      validate_registry_optional_boolean!(document, "align_child_columns")
       document
     end
 
@@ -231,6 +233,13 @@ module PartitionGardener
       return if backend.is_a?(String) && %w[gardener pg_partman hybrid_layout_only].include?(backend)
 
       raise ArgumentError, "maintenance_backend must be gardener, pg_partman, or hybrid_layout_only"
+    end
+
+    def validate_registry_optional_boolean!(document, key)
+      return unless document.key?(key)
+      return if document.fetch(key) == true || document.fetch(key) == false
+
+      raise ArgumentError, "#{key} must be true or false"
     end
 
     def register_validated_document!(document)

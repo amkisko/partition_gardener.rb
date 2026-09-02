@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Align LIKE and detached children with additive parent columns before `ATTACH PARTITION`, preserving type, collation, default, and `NOT NULL` atomically. Audit warns when a managed child still lags. Set `align_child_columns: false` to fail fast instead.
+
 ## 0.3.3 (2026-08-13)
 
 - Roll the sliding-window current partition before attaching the prior month's archive so a month rollover detaches the old current span and attaches that month as its own child

@@ -18,6 +18,12 @@ RSpec.describe PartitionGardener::Executor do
 
       expect(instance.instance_variable_get(:@batch_size)).to eq(2_000)
     end
+
+    it "uses per-table align_child_columns when configured" do
+      instance = described_class.for_config({align_child_columns: false}, connection: connection)
+
+      expect(instance.instance_variable_get(:@align_child_columns)).to be(false)
+    end
   end
 
   describe "#ensure_parent_conflict_index!" do

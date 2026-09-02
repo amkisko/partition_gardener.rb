@@ -53,6 +53,8 @@ When the gem loads inside Rails, the railtie sets `connection_resolver` and `tod
 
 `retention_detach_concurrently` (default: `false`) — detach dropped archive partitions with `CONCURRENTLY` (global default).
 
+`align_child_columns` (default: `true`) — before `ATTACH PARTITION`, add ordinary parent columns that a LIKE or detached child is missing. Audit warns when a child still lags. Set `false` to fail fast when a child is missing those columns.
+
 ### Advisory locks
 
 Each table run acquires `pg_advisory_lock(hashtext('partition_gardener'), hashtext(table_name))` (or the transaction-scoped variant).
@@ -163,6 +165,8 @@ All templates accept shared options passed through to the registry hash:
 `retention_keep_table` (default: `false`) — detach but do not drop expired partitions.
 
 `retention_detach_concurrently` (default: global default) — per-table override for concurrent detach.
+
+`align_child_columns` (default: global default) — per-table override. Additive only: add missing ordinary columns in one statement (skip identity and generated), preserving type, non-default collation, default, and `NOT NULL`. If existing rows cannot satisfy `NOT NULL`, PostgreSQL rejects the complete alignment and leaves the child unchanged. Existing types, extra child columns, and other constraints stay as they are.
 
 `maintenance_backend` (default: `:gardener`) — `:gardener`, `:pg_partman`, or `:hybrid_layout_only`.
 

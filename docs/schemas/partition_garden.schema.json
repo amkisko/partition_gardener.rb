@@ -92,6 +92,10 @@
     "retention_detach_concurrently": {
       "type": "boolean"
     },
+    "align_child_columns": {
+      "type": "boolean",
+      "description": "When true (default), atomically add missing ordinary parent columns with their collation, default, and NOT NULL contract on a LIKE or detached child before ATTACH PARTITION"
+    },
     "hash_modulus": {
       "type": "integer",
       "minimum": 2,

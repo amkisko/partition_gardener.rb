@@ -61,6 +61,10 @@ module PartitionGardener
         warnings << "partition gap: #{gap.message}"
       end
 
+      warning_options = {}
+      warning_options[:candidate_table] = method(:managed_child_table?) if @config
+      warnings.concat(ChildColumnAlign.lagging_child_warnings(@table_name, **warning_options))
+
       AuditResult.new(
         table_name: @table_name,
         partitioned: true,
@@ -73,6 +77,18 @@ module PartitionGardener
     end
 
     private
+
+    def managed_child_table?(child_table)
+      return true if @config[:partition_name_format_is_custom] || @config[:archive_partition_name_format]
+      return true if child_table == Naming.rebalance_staging_partition_name(@table_name)
+
+      strategy = (@strategy ||= Strategy.for(@config))
+      return true if strategy.respond_to?(:tail_slot_name?) && strategy.tail_slot_name?(child_table)
+
+      !strategy.archive_bucket_from_partition_name(child_table).nil?
+    rescue Date::Error
+      false
+    end
 
     def compute_horizon_days(partitions)
       today = PartitionGardener.configuration.today
