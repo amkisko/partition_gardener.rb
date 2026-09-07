@@ -45,7 +45,7 @@ Thumbs.db
 
 docs/THIRD_PARTY_LICENSE_MANIFEST.tsv
 
-.pray/cache
+.pray
 
 # Trunk
 /.trunk/actions
