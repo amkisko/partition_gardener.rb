@@ -58,13 +58,14 @@ bundle exec partition_gardener --rails apply --confirm audits
 Apply all registered gardener-owned tables:
 
 ```bash
-bundle exec partition_gardener --rails apply --all
+bundle exec partition_gardener --rails apply --confirm --all
 ```
 
 Omitting a table name without `--all` also runs the full registry.
 
 ## Related
 
+- [RFC 0008](../rfcs/0008-cli.md) — verbs, confirm gate, table selection
 - [configuration.md](configuration.md) — registry format and global config
 - [background_job.md](background_job.md) — when to use a job instead of CLI apply
 - [audit_reference.md](audit_reference.md) — audit and plan output reference

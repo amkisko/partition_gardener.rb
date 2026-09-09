@@ -122,6 +122,7 @@ Disable globally or per table if you do not want checkpoint storage ([configurat
 
 ## Related
 
+- [RFC 0005](../rfcs/0005-plan-audit-reports.md) — plan, audit, and RunSummary contract
 - [operations.md](operations.md) — remediation workflows
 - [monitoring.md](monitoring.md) — metrics from these fields
 - [naming.md](naming.md) — segment names in output

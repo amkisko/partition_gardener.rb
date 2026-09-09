@@ -5,6 +5,7 @@
 - Keep attached monthly children that already cover the start of the sliding-window active range, and fill the remainder as `_open` rather than overlapping `_current`
 - Start `_future` after premade months that occupy keys at or after the active window end, and skip `_future` when an occupying child already ends at MAXVALUE
 - Add the RFC process (RFC 0001) and a Proposed occupancy-first contract for `_current`, `_open`, and `_future` (RFC 0002)
+- Specify shipped registry, plan, CLI, layout, rebalance, lock, hot-switch, and column-align contracts as Stable RFCs 0003 through 0015
 
 ## 0.3.4 (2026-09-02)
 

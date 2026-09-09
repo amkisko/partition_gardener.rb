@@ -44,7 +44,7 @@ Complements migration gems (e.g. [pg_party](https://github.com/rkrage/pg_party))
 ### Schemas and RFCs
 
 - [docs/schemas/](docs/schemas/) — JSON schemas for registry and plan reports
-- [rfcs/](rfcs/) — design review; RFC 0002 is occupancy-first tail slots
+- [rfcs/](rfcs/) — design review; RFC 0002 Proposed tail slots; RFC 0003–0015 Stable shipped contracts
 
 ## Quick start
 

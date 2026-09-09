@@ -67,6 +67,7 @@ Remediation: prefer `plan` + `apply` over manual attach. If manual children are 
 ## Related
 
 - [RFC 0002](../rfcs/0002-tail-slots.md) — names and occupancy-first placement
+- [RFC 0006](../rfcs/0006-archive-naming.md) — date-bucket suffixes and parse-back
 - [operations.md](operations.md) — gap remediation
 - [cutover.md](cutover.md) — shadow `p_` prefix
 - [audit_reference.md](audit_reference.md) — gap messages

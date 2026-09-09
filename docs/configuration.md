@@ -257,6 +257,8 @@ Registry entries are operator-controlled configuration, not end-user input.
 
 ## Related
 
+- [RFC 0004](../rfcs/0004-registry-json.md) — portable registry file
+- [RFC 0009](../rfcs/0009-maintenance-backends.md) — gardener, pg_partman, hybrid
 - [background_job.md](background_job.md) — schedule `run!` from a host job
 - [cli.md](cli.md) — plan, audit, apply from the shell
 - [decision_flow.md](decision_flow.md) — when and how to partition

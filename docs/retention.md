@@ -60,6 +60,7 @@ When `maintenance_backend: :pg_partman`, gardener skips the table; partman owns 
 
 ## Related
 
+- [RFC 0007](../rfcs/0007-retention.md) — cutoff, preview, skip list
 - [decision_flow.md](decision_flow.md) — retention in layout choice
 - [operations.md](operations.md) — incident response
 - [monitoring.md](monitoring.md) — alerts

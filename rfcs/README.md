@@ -44,3 +44,5 @@ Trivial exemption: bugfixes, typos, and refactors that do not change user-facing
 Procedural: RFC 0001 (Proposed).
 
 Standards Track, Proposed: RFC 0002 (tail slots).
+
+Standards Track, Stable: RFC 0003 (sliding window), RFC 0004 (registry JSON), RFC 0005 (plan and audit reports), RFC 0006 (archive names), RFC 0007 (retention), RFC 0008 (CLI), RFC 0009 (maintenance backends), RFC 0010 (keyset rebalance), RFC 0011 (advisory lock and run records), RFC 0012 (hot switch), RFC 0013 (child column align), RFC 0014 (integer window), RFC 0015 (hash, list, composite).
