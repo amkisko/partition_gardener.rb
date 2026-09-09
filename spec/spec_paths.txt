@@ -21,6 +21,7 @@ spec/partition_gardener/connection_cache_spec.rb
 spec/partition_gardener/connection_unique_index_spec.rb
 spec/partition_gardener/cursor_columns_spec.rb
 spec/partition_gardener/date_bucket_spec.rb
+spec/partition_gardener/date_range_occupied_window_spec.rb
 spec/partition_gardener/executor_spec.rb
 spec/partition_gardener/gap_detection_spec.rb
 spec/partition_gardener/hash_routing_spec.rb
