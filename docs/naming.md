@@ -8,13 +8,13 @@ Fixed suffixes on the parent table name:
 
 `{table}_default` — catch-all; must trend empty.
 
-`{table}_current` — start of active window.
+`{table}_current` — filler that starts at the active window origin. The span is the uncovered remainder of that window, not this calendar month or sequence id.
 
-`{table}_open` — gap filler in current zone.
+`{table}_open` — gap filler in the current zone when the origin is already a named child or a heat split. Extra fillers after that are `{table}_open_N`.
 
 `{table}_open_N` — extra fillers after heat splits.
 
-`{table}_future` — open-ended tail to MAXVALUE.
+`{table}_future` — open-ended tail to MAXVALUE. It starts at the first instant at or after the window end that no occupying child covers.
 
 `{table}_rebalance_staging` — temporary during tail rebalance.
 
@@ -66,6 +66,7 @@ Remediation: prefer `plan` + `apply` over manual attach. If manual children are 
 
 ## Related
 
+- [RFC 0002](../rfcs/0002-tail-slots.md) — names and occupancy-first placement
 - [operations.md](operations.md) — gap remediation
 - [cutover.md](cutover.md) — shadow `p_` prefix
 - [audit_reference.md](audit_reference.md) — gap messages

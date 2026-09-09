@@ -25,22 +25,13 @@ module PartitionGardener
         window = active_window
         heatmap = collect_heatmap(window)
         hot_buckets = hot_buckets_in_window(heatmap, window)
-
-        segments = if year_bucket?
-          Layout::CalendarYear.build_segments(
-            config: @config,
-            active_start: window[:start],
-            active_end: window[:end],
-            hot_years: hot_buckets
-          )
-        else
-          Layout::SlidingWindow.build_segments(
-            config: @config,
-            active_start: window[:start],
-            active_end: window[:end],
-            hot_months: hot_buckets
-          )
-        end
+        segments = Layout::OccupiedWindow.plan_segments(
+          config: @config,
+          window: window,
+          hot_buckets: hot_buckets,
+          year_bucket: year_bucket?,
+          tail_slot: method(:tail_slot_name?)
+        )
 
         Plan::Result.new(segments: segments, hot_buckets: hot_buckets)
       end
@@ -230,6 +221,9 @@ module PartitionGardener
 
       def managed_tail_partition?(partition_name, window:)
         return true if tail_slot_name?(partition_name)
+
+        partition = Connection.attached_partitions(table_name).find { |item| item.name == partition_name }
+        return true if partition && Layout::OccupiedWindow.overlap?(partition, window)
 
         bucket = archive_bucket_from_partition_name(partition_name)
         bucket && bucket_in_window?(bucket, window)

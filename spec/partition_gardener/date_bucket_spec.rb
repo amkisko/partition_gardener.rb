@@ -28,6 +28,16 @@ RSpec.describe PartitionGardener::DateBucket do
       bucket = described_class.archive_bucket_from_partition_name("events", "events_2026_Q3", :quarter)
       expect(bucket).to eq(Date.new(2026, 7, 1))
     end
+
+    it "parses monthly partition names" do
+      bucket = described_class.archive_bucket_from_partition_name("events", "events_2026_09", :month)
+      expect(bucket).to eq(Date.new(2026, 9, 1))
+    end
+
+    it "parses monthly partition names that end on the first of the month" do
+      bucket = described_class.archive_bucket_from_partition_name("events", "events_2026_09_01", :month)
+      expect(bucket).to eq(Date.new(2026, 9, 1))
+    end
   end
 
   describe ".partition_definition_clause" do

@@ -3,7 +3,7 @@ module PartitionGardener
     module ZoneSegments
       module_function
 
-      def build_filler_and_hot_segments(table_name:, buckets:, hot_buckets:, active_start:, active_end:, hot_bucket_name:, bucket_end:)
+      def build_filler_and_hot_segments(table_name:, buckets:, hot_buckets:, active_start:, active_end:, hot_bucket_name:, bucket_end:, occupied_segments: [])
         hot_bucket_set = hot_buckets.to_set
         segments = []
         middle_filler_index = 0
@@ -11,6 +11,13 @@ module PartitionGardener
 
         while index < buckets.length
           bucket = buckets[index]
+          occupant = OccupiedWindow.covering(occupied_segments, bucket)
+
+          if occupant
+            segments << occupant unless segments.any? { |segment| segment.name == occupant.name }
+            index = OccupiedWindow.next_bucket_index(buckets, occupant.range_end, from: index)
+            next
+          end
 
           if hot_bucket_set.include?(bucket)
             segments << Plan::Segment.new(
@@ -24,7 +31,7 @@ module PartitionGardener
           end
 
           run_start = bucket
-          while index < buckets.length && !hot_bucket_set.include?(buckets[index])
+          while index < buckets.length && !hot_bucket_set.include?(buckets[index]) && OccupiedWindow.covering(occupied_segments, buckets[index]).nil?
             index += 1
           end
           run_end = (index < buckets.length) ? buckets[index] : active_end
@@ -48,14 +55,12 @@ module PartitionGardener
           )
         end
 
-        segments << Plan::Segment.new(
-          name: Naming.future_partition_name(table_name),
-          range_start: active_end,
-          range_end: :max,
-          kind: :future
+        OccupiedWindow.finish_with_high_end(
+          segments,
+          occupied_segments: occupied_segments,
+          table_name: table_name,
+          active_end: active_end
         )
-
-        segments
       end
     end
   end

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Keep attached monthly children that already cover the start of the sliding-window active range, and fill the remainder as `_open` rather than overlapping `_current`
+- Start `_future` after premade months that occupy keys at or after the active window end, and skip `_future` when an occupying child already ends at MAXVALUE
+- Add the RFC process (RFC 0001) and a Proposed occupancy-first contract for `_current`, `_open`, and `_future` (RFC 0002)
+
 ## 0.3.4 (2026-09-02)
 
 - Align LIKE and detached children with additive parent columns before `ATTACH PARTITION`, preserving type, collation, default, and `NOT NULL` atomically. Audit warns when a managed child still lags. Set `align_child_columns: false` to fail fast instead.

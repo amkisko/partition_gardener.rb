@@ -8,7 +8,7 @@ module PartitionGardener
           DateCalendar.add_years(active_start, active_years)
         end
 
-        def build_segments(config:, active_start:, active_end:, hot_years:)
+        def build_segments(config:, active_start:, active_end:, hot_years:, occupied_segments: [])
           strategy = Strategy::DateRange.new(config.merge(bucket: :year))
           buckets = strategy.send(:each_bucket_in_range, active_start, active_end)
 
@@ -19,7 +19,8 @@ module PartitionGardener
             active_start: active_start,
             active_end: active_end,
             hot_bucket_name: config[:partition_name_format],
-            bucket_end: ->(bucket) { DateCalendar.beginning_of_year(DateCalendar.next_year(bucket)) }
+            bucket_end: ->(bucket) { DateCalendar.beginning_of_year(DateCalendar.next_year(bucket)) },
+            occupied_segments: occupied_segments
           )
         end
       end

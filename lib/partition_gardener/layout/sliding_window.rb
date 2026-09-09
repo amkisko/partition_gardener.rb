@@ -7,7 +7,7 @@ module PartitionGardener
           DateBucket.add_buckets(active_start, span, bucket)
         end
 
-        def build_segments(config:, active_start:, active_end:, hot_months:)
+        def build_segments(config:, active_start:, active_end:, hot_months:, occupied_segments: [])
           strategy = Strategy::DateRange.new(config)
           buckets = strategy.send(:each_bucket_in_range, active_start, active_end)
           bucket = config.fetch(:bucket, :month)
@@ -19,7 +19,8 @@ module PartitionGardener
             active_start: active_start,
             active_end: active_end,
             hot_bucket_name: config[:partition_name_format],
-            bucket_end: ->(bucket_start) { DateBucket.end_of_bucket(bucket_start, bucket) }
+            bucket_end: ->(bucket_start) { DateBucket.end_of_bucket(bucket_start, bucket) },
+            occupied_segments: occupied_segments
           )
         end
       end

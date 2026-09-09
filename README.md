@@ -41,9 +41,10 @@ Complements migration gems (e.g. [pg_party](https://github.com/rkrage/pg_party))
 - [docs/naming.md](docs/naming.md) — child partition naming catalog
 - [docs/host_testing.md](docs/host_testing.md) — CI and staging for host apps
 
-### Schemas
+### Schemas and RFCs
 
 - [docs/schemas/](docs/schemas/) — JSON schemas for registry and plan reports
+- [rfcs/](rfcs/) — design review; RFC 0002 is occupancy-first tail slots
 
 ## Quick start
 

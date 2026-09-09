@@ -83,4 +83,74 @@ RSpec.describe "sliding window maintenance", :integration do
       ).to eq(Date.new(2026, 8, 1))
     end
   end
+
+  context "when monthly children already occupy the window start" do
+    let(:today) { Date.new(2026, 9, 9) }
+    let(:september_partition) { "#{table_name}_2026_09_01" }
+    let(:horizon_partition) { "#{table_name}_2027_09_01" }
+
+    before do
+      drop_table_cascade!(table_name)
+      PartitionGardener::Registry.reset!
+      create_monthly_catalog_through!(table_name, from: Date.new(2026, 6, 1), through: Date.new(2026, 9, 1))
+      attach_monthly_child!(table_name, Date.new(2027, 9, 1))
+      register_sliding_window!(table_name, today: today, split_row_threshold: 100_000)
+      insert_row!(september_partition, id: 1, occurred_on: Date.new(2026, 9, 4))
+    end
+
+    it "attaches open after the last occupying month and keeps that month attached" do
+      run_maintenance!
+
+      expect(partition_attached?(table_name, september_partition)).to be(true)
+      expect(count_rows(september_partition)).to eq(1)
+      expect(partition_attached?(table_name, current_name(table_name))).to be(false)
+      expect(partition_attached?(table_name, open_name(table_name))).to be(true)
+      expect(partition_attached?(table_name, horizon_partition)).to be(true)
+      expect(partition_attached?(table_name, future_name(table_name))).to be(true)
+      expect(
+        PartitionGardener::Connection.current_partition_lower_bound(table_name, open_name(table_name))
+      ).to eq(Date.new(2026, 10, 1))
+      expect(
+        PartitionGardener::Connection.current_partition_lower_bound(table_name, future_name(table_name))
+      ).to eq(Date.new(2027, 10, 1))
+
+      PartitionGardener::Connection.clear_attached_partitions_cache!
+      expect(PartitionGardener::GapDetection.call(table_name)).to be_empty
+    end
+  end
+
+  def create_monthly_catalog_through!(table_name, from:, through:)
+    connection = PartitionGardener::Integration::Database.connection
+    quoted_parent = quote_table(table_name)
+
+    connection.execute(<<~SQL)
+      CREATE TABLE #{quoted_parent} (
+        id bigint NOT NULL,
+        occurred_on date NOT NULL,
+        PRIMARY KEY (id, occurred_on)
+      ) PARTITION BY RANGE (occurred_on)
+    SQL
+
+    connection.execute(<<~SQL)
+      CREATE TABLE #{quote_table(default_name(table_name))} PARTITION OF #{quoted_parent} DEFAULT
+    SQL
+
+    month = from.beginning_of_month
+    last_month = through.beginning_of_month
+    while month <= last_month
+      attach_monthly_child!(table_name, month)
+      month = month.next_month
+    end
+  end
+
+  def attach_monthly_child!(table_name, month)
+    month = month.beginning_of_month
+    next_month = month.next_month
+    child_name = "#{table_name}_#{month.strftime("%Y_%m_%d")}"
+    connection = PartitionGardener::Integration::Database.connection
+    connection.execute(<<~SQL)
+      CREATE TABLE #{quote_table(child_name)} PARTITION OF #{quote_table(table_name)}
+      FOR VALUES FROM ('#{month}') TO ('#{next_month}')
+    SQL
+  end
 end

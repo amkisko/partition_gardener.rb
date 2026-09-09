@@ -101,7 +101,7 @@ module PartitionGardener
         match = partition_name.match(/^#{Regexp.escape(table_name)}_(\d{4})$/)
         return Date.new(match[1].to_i, 1, 1) if match
       else
-        match = partition_name.match(/^#{Regexp.escape(table_name)}_(\d{4})_(\d{2})$/)
+        match = partition_name.match(/^#{Regexp.escape(table_name)}_(\d{4})_(\d{2})(?:_01)?$/)
         return Date.new(match[1].to_i, match[2].to_i, 1) if match
       end
 

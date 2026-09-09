@@ -356,6 +356,10 @@ module PartitionGardener
         "#{table_name}_current"
       end
 
+      def open_name(table_name)
+        "#{table_name}_open"
+      end
+
       def future_name(table_name)
         "#{table_name}_future"
       end
