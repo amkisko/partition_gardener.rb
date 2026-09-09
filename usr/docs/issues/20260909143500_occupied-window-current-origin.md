@@ -18,7 +18,7 @@ A catalog of monthly children through the current month, with default only and n
 
 ## Next
 
-RFC 0002 is Proposed. Occupied origin naming and high-end occupancy for future are in this patch. Unresolved questions live in the RFC. Implementation PRs cite RFC-0002.
+RFC 0002 stays Proposed. Unresolved questions live in the RFC, including integer occupancy. Implementation PRs cite RFC-0002.
 
 ## Source
 

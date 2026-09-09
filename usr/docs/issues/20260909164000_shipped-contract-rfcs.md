@@ -18,7 +18,7 @@ The RFC files and id claims exist on this branch. Indexes and Related links poin
 
 ## Next
 
-Review Proposed RFC 0002. Follow-on RFC if integer occupancy ships. Do not bump the gem version for documentation-only RFCs.
+Review Proposed RFC 0002. Follow-on RFC if integer occupancy ships.
 
 ## Source
 

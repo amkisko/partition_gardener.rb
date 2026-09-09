@@ -10,7 +10,7 @@ Stable RFCs 0003 through 0015 specify contracts that already ship: sliding windo
 
 ## Effects
 
-rfcs/ids/0003 through rfcs/ids/0015 are claimed. Matching rfcs/NNNN-slug.md files are Stable. rfcs/README.md Current set lists them. CHANGELOG Unreleased records the set. Operator guides gained Related links. docs/cli.md apply --all example now includes --confirm.
+rfcs/ids/0003 through rfcs/ids/0015 are claimed. Matching rfcs/NNNN-slug.md files are Stable. rfcs/README.md Current set lists them. CHANGELOG 0.3.5 records the set. Operator guides gained Related links. docs/cli.md apply --all example now includes --confirm.
 
 ## Next
 
