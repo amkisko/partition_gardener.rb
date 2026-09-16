@@ -2,7 +2,7 @@
 
 Partition Gardener targets PostgreSQL native declarative partitioning with gardener-owned maintenance plans. This page maps industry patterns to what the gem implements, documents experimental layouts, and lists what belongs outside the gem.
 
-Canonical home for routing (layers, recovery ladder, hints), pruning, UI scoping, and aggregate snapshots. Host query and write obligations live in [application_contract.md](application_contract.md). Cross-engine portability lives in [partition_engines.md](partition_engines.md).
+Canonical home for routing (layers, recovery ladder, hints), pruning, UI scoping, and aggregate snapshots. Host query, write, and public identifier obligations live in [application_contract.md](application_contract.md). Cross-engine portability lives in [partition_engines.md](partition_engines.md).
 
 ## Implemented templates
 
@@ -113,6 +113,8 @@ end
 
 `query_constraints` (Rails 7.1+) adds listed columns to `UPDATE` and `DELETE` `WHERE` clauses so writes can prune. It does not add the partition key to `SELECT` lookups: `Event.find(id)` may still scan all partitions unless `id` is globally unique and the planner can prove a single child.
 
+Public URLs and API ids are a separate contract from `query_constraints`. See [application_contract.md](application_contract.md#public-identifiers).
+
 For reads, encode the contract in scopes used by hot paths:
 
 ```ruby
@@ -150,7 +152,7 @@ Recovery ladder (prefer earlier steps):
 #### Exact key (preferred)
 
 - Denormalize the parent business date (or tenant/branch) onto the child at insert time; filter and join on the child column.
-- Store the partition key next to the logical id in API cursors, job args, outbox payloads, and admin deep links. Opaque tokens may encode `(id, partition_key)` so clients never send id-only.
+- Store the partition key next to the logical id in API cursors, job args, outbox payloads, and admin deep links. Opaque tokens may encode `(id, partition_key)` so clients never send id-only ([application_contract.md](application_contract.md#public-identifiers)).
 - Use a generated column when the key is a stable expression of an existing column the planner can see (`created_at::date` registered and filtered the same way).
 
 #### Orientation / range from a related record
@@ -218,7 +220,7 @@ Registry `conflict_key` must match a parent unique index and should include the 
 
 ### UI and product surfaces
 
-Partition boundaries are an application contract, not only a database detail. Screens and APIs should make the same separation key visible to people so routine work stays inside one prune-friendly slice. User-facing copy should describe periods, accounts, or branches in product language, not partitions, shards, or child tables.
+Partition boundaries are an application contract, not only a database detail. Screens and APIs should make the same separation key visible to people so routine work stays inside one prune-friendly slice. User-facing copy should describe periods, accounts, or branches in product language, not partitions, shards, or child tables. Point-lookup URLs may use an opaque token; list and filter screens still show the period or tenant ([application_contract.md](application_contract.md#public-identifiers)).
 
 Time-partitioned data (monthly sliding window):
 
@@ -410,7 +412,7 @@ Operations and migration docs in this repository:
 
 - [operations.md](operations.md) — runbook
 - [cutover.md](cutover.md) — hot-switch playbook
-- [application_contract.md](application_contract.md) — host app behavior
+- [application_contract.md](application_contract.md) — host app behavior, public identifiers
 - [monitoring.md](monitoring.md) — metrics and alerts
 - [retention.md](retention.md) — archive detach and drop
 - [audit_reference.md](audit_reference.md) — audit and plan catalog

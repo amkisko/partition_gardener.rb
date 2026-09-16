@@ -37,7 +37,7 @@ Complements migration gems (e.g. [pg_party](https://github.com/rkrage/pg_party))
 ### Application and migration
 
 - [docs/cutover.md](docs/cutover.md) — hot-switch playbook and template upgrades
-- [docs/application_contract.md](docs/application_contract.md) — writes, moves, routing when the key is missing, bulk load, replicas
+- [docs/application_contract.md](docs/application_contract.md) — writes, moves, routing when the key is missing, public identifiers, bulk load, replicas
 - [docs/naming.md](docs/naming.md) — child partition naming catalog
 - [docs/host_testing.md](docs/host_testing.md) — CI and staging for host apps
 

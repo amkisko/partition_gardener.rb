@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Document public identifiers for partitioned rows: four contracts, Rails signed_id versus scalar primary_key, fail-closed decode ([application_contract.md](docs/application_contract.md#public-identifiers))
+
 ## 0.3.5 (2026-09-09)
 
 - Keep attached monthly children that already cover the start of the sliding-window active range, and fill the remainder as `_open` rather than overlapping `_current`
