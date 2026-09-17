@@ -57,7 +57,7 @@ GEM
     pg (1.6.3-x86_64-darwin)
     pg (1.6.3-x86_64-linux)
     pg (1.6.3-x86_64-linux-musl)
-    polyrun (2.2.3)
+    polyrun (2.2.4)
     prism (1.9.0)
     prosopite (2.2.0)
     racc (1.8.1)
@@ -214,7 +214,7 @@ CHECKSUMS
   pg (1.6.3-x86_64-darwin) sha256=ee2e04a17c0627225054ffeb43e31a95be9d7e93abda2737ea3ce4a62f2729d6
   pg (1.6.3-x86_64-linux) sha256=5d9e188c8f7a0295d162b7b88a768d8452a899977d44f3274d1946d67920ae8d
   pg (1.6.3-x86_64-linux-musl) sha256=9c9c90d98c72f78eb04c0f55e9618fe55d1512128e411035fe229ff427864009
-  polyrun (2.2.3) sha256=854c2cdb032948edfe8d61b5223edca80a66845370daaf91e286e9b8ea4e0f70
+  polyrun (2.2.4) sha256=3ad9a48a1b8c6ce13ad8cb8b6b66cbe45a622efbcabc761304cec3156343f8d2
   prism (1.9.0) sha256=7b530c6a9f92c24300014919c9dcbc055bf4cdf51ec30aed099b06cd6674ef85
   prosopite (2.2.0) sha256=14affaa3ff0ff15abe8f6ae2951de0984dc6da5df1c42333692d2c0789d08b91
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
