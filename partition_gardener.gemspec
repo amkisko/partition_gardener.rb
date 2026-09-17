@@ -49,7 +49,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec", "~> 3"
   spec.add_development_dependency "polyrun", ">= 2.2.0"
   spec.add_development_dependency "prosopite", "~> 2.0"
-  spec.add_development_dependency "rspec_junit_formatter", "~> 0.6"
   spec.add_development_dependency "standard", "~> 1.52"
   spec.add_development_dependency "standard-custom", "~> 1.0"
   spec.add_development_dependency "standard-performance", "~> 1.8"

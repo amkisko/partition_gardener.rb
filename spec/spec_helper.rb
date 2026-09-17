@@ -1,15 +1,6 @@
 require "bundler/setup"
 
-# When POLYRUN_RSPEC_JSON=1, each parallel worker writes tmp/rspec-<i>.json for CI report-junit.
-if ENV["POLYRUN_RSPEC_JSON"] == "1" && ENV["POLYRUN_SHARD_INDEX"]
-  require "fileutils"
-  idx = ENV.fetch("POLYRUN_SHARD_INDEX")
-  json_out = File.expand_path("../tmp/rspec-#{idx}.json", __dir__)
-  FileUtils.mkdir_p(File.dirname(json_out))
-  RSpec.configure do |config|
-    config.add_formatter(:json, json_out)
-  end
-end
+Dir[File.join(__dir__, "support/**/*.rb")].sort.each { |path| require path }
 
 polyrun_cov_measure =
   ENV["POLYRUN_COVERAGE_DISABLE"] != "1" &&
