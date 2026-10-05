@@ -1,6 +1,7 @@
 module PartitionGardener
   class SqlRunRecordStore
-    TABLE_NAME = "partition_gardener_run_records"
+    TABLE_NAME = "partition_gardener_checkpoints"
+    LEGACY_TABLE_NAMES = %w[partition_gardener_runs partition_gardener_run_records].freeze
 
     def initialize
       @schema_mutex = Mutex.new
@@ -40,6 +41,7 @@ module PartitionGardener
       @schema_mutex.synchronize do
         return if @schema_ready
 
+        migrate_legacy_table!
         connection.execute(create_table_sql)
         @schema_ready = true
       end
@@ -55,17 +57,50 @@ module PartitionGardener
       connection.quote_table_name(name)
     end
 
+    def storage_table_name
+      PartitionGardener.configuration.run_record_table_name
+    end
+
+    def migrate_legacy_table!
+      return unless storage_table_name == TABLE_NAME
+      return if catalog_relation_exists?(storage_table_name)
+
+      LEGACY_TABLE_NAMES.each do |legacy_name|
+        next if legacy_name == storage_table_name
+        next unless catalog_relation_exists?(legacy_name)
+
+        connection.execute(
+          "ALTER TABLE #{quoted_table(legacy_name)} RENAME TO #{quoted_table(storage_table_name)}"
+        )
+        break
+      end
+    end
+
+    def catalog_relation_exists?(name)
+      sql = <<~SQL
+        SELECT 1 AS present
+        FROM pg_catalog.pg_class AS classes
+        INNER JOIN pg_catalog.pg_namespace AS namespaces
+          ON namespaces.oid = classes.relnamespace
+        WHERE namespaces.nspname = #{connection.quote(PartitionGardener.configuration.schema_name)}
+          AND classes.relname = #{connection.quote(name)}
+          AND classes.relkind IN ('r', 'p')
+      SQL
+
+      Blank.present?(connection.execute(sql).first)
+    end
+
     def load_sql(table_name)
       <<~SQL
         SELECT table_name, phase, plan_signature, staging_row_count
-        FROM #{quoted_table(TABLE_NAME)}
+        FROM #{quoted_table(storage_table_name)}
         WHERE table_name = #{connection.quote(table_name)}
       SQL
     end
 
     def save_sql(table_name, attributes)
       <<~SQL
-        INSERT INTO #{quoted_table(TABLE_NAME)} (
+        INSERT INTO #{quoted_table(storage_table_name)} (
           table_name, phase, plan_signature, staging_row_count, updated_at
         ) VALUES (
           #{connection.quote(table_name)},
@@ -84,14 +119,14 @@ module PartitionGardener
 
     def clear_sql(table_name)
       <<~SQL
-        DELETE FROM #{quoted_table(TABLE_NAME)}
+        DELETE FROM #{quoted_table(storage_table_name)}
         WHERE table_name = #{connection.quote(table_name)}
       SQL
     end
 
     def create_table_sql
       <<~SQL
-        CREATE TABLE IF NOT EXISTS #{quoted_table(TABLE_NAME)} (
+        CREATE TABLE IF NOT EXISTS #{quoted_table(storage_table_name)} (
           table_name text PRIMARY KEY,
           phase text NOT NULL,
           plan_signature text NOT NULL,

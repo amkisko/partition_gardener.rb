@@ -98,7 +98,7 @@ Per-table metrics (`RunMetrics#to_h`):
 
 ## Run record table
 
-When `run_record_enabled`, PostgreSQL table `partition_gardener_run_records` stores:
+When `run_record_enabled`, PostgreSQL table `partition_gardener_checkpoints` (or `run_record_table_name`) stores:
 
 `table_name` — parent.
 

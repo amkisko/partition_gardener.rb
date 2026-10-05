@@ -26,7 +26,7 @@ Namespace: `hashtext('partition_gardener'), hashtext(table_name)`. Modes: `:tran
 
 A miss MUST skip that table, set `skip_reason` `lock_not_acquired`, and MUST NOT raise out of `run!`.
 
-Table `partition_gardener_run_records` columns: `table_name`, `phase`, `plan_signature`, `staging_row_count`, `updated_at`. Resume only when `plan_signature` matches the current plan (RFC 0005). `run_record_enabled` false skips persistence.
+Table `partition_gardener_checkpoints` (configurable as `run_record_table_name`) columns: `table_name`, `phase`, `plan_signature`, `staging_row_count`, `updated_at`. Resume only when `plan_signature` matches the current plan (RFC 0005). `run_record_enabled` false skips persistence. With the default table name, first use MUST rename `partition_gardener_runs` or `partition_gardener_run_records` when that relation exists and `partition_gardener_checkpoints` does not.
 
 ### Fail modes
 
@@ -38,7 +38,7 @@ Lock acquire false is a skip, not an error in `errors`. A session-mode process t
 
 ## Registrar
 
-Lock keys `partition_gardener` plus `table_name`. Skip reason `lock_not_acquired`. Table `partition_gardener_run_records`. `run_record_enabled`.
+Lock keys `partition_gardener` plus `table_name`. Skip reason `lock_not_acquired`. Table `partition_gardener_checkpoints`. `run_record_table_name`. `run_record_enabled`.
 
 ## Drawbacks
 

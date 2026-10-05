@@ -47,6 +47,8 @@ When the gem loads inside Rails, the railtie sets `connection_resolver` and `tod
 
 `run_record_enabled` (default: `true`) — persist phase checkpoints for resume (global default).
 
+`run_record_table_name` (default: `partition_gardener_checkpoints`) — PostgreSQL table used by `SqlRunRecordStore`. On first use with the default name, the store renames `partition_gardener_runs` or `partition_gardener_run_records` when that relation exists and the default table does not.
+
 `run_record_store` (default: `SqlRunRecordStore` when a database connection is available, else in-memory) — where rebalance checkpoints are stored.
 
 `strict_maintenance_backend_validation` (default: `false`) — when `true`, raise `MaintenanceBackend::ValidationError` on register if `maintenance_backend` disagrees with `partman.parent_config`; when `false`, notify only.
@@ -67,7 +69,7 @@ Do not run two full `run!` jobs against the same table concurrently. Host apps s
 
 ### Run records
 
-When a database connection is configured (Active Record or `DATABASE_URL`), `SqlRunRecordStore` creates `partition_gardener_run_records` on first use. Run records let incremental rebalance resume after partial failure. Disable with `config.run_record_enabled = false` or per-table `run_record_enabled: false`.
+When a database connection is configured (Active Record or `DATABASE_URL`), `SqlRunRecordStore` creates `partition_gardener_checkpoints` on first use. Checkpoints let incremental rebalance resume after partial failure. Disable with `config.run_record_enabled = false` or per-table `run_record_enabled: false`. Set `config.run_record_table_name` when the host already owns another table name.
 
 ## Per-table registration
 

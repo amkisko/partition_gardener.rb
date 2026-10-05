@@ -15,7 +15,7 @@ module PartitionGardener
       :strict_maintenance_backend_validation,
       :current_run_metrics
 
-    attr_writer :run_record_store
+    attr_writer :run_record_store, :run_record_table_name
 
     def initialize
       @notifier = ->(_message_or_error, context: {}) {}
@@ -28,6 +28,7 @@ module PartitionGardener
       @analyze_after_rebalance = false
       @incremental_rebalance = true
       @run_record_enabled = true
+      @run_record_table_name = SqlRunRecordStore::TABLE_NAME
       @run_record_store = nil
       @retention_detach_concurrently = false
       @align_child_columns = true
@@ -37,6 +38,13 @@ module PartitionGardener
 
     def run_record_store
       @run_record_store ||= default_run_record_store
+    end
+
+    def run_record_table_name
+      name = @run_record_table_name.to_s.strip
+      raise ArgumentError, "run_record_table_name is blank" if name.empty?
+
+      name
     end
 
     def connection

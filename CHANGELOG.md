@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Store rebalance checkpoints in `partition_gardener_checkpoints` by default (previously `partition_gardener_run_records`)
+- Add `run_record_table_name` so a host can keep another checkpoint table name
+- Rename leftover `partition_gardener_runs` or `partition_gardener_run_records` on first use of the default table name
 - Document public identifiers for partitioned rows: four contracts, Rails signed_id versus scalar primary_key, fail-closed decode ([application_contract.md](docs/application_contract.md#public-identifiers))
 
 ## 0.3.5 (2026-09-09)

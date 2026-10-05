@@ -83,7 +83,7 @@ table is not a partitioned table — registry typo or wrong connection. Action: 
 
 ## Failed or partial runs
 
-Gardener persists checkpoints in `partition_gardener_run_records` when `run_record_enabled` is true (default).
+Gardener persists checkpoints in `partition_gardener_checkpoints` when `run_record_enabled` is true (default). Override the table with `run_record_table_name`.
 
 1. Read `errors` and notifier context (`table_name`, `action`).
 2. `audit TABLE` — confirm default count and gaps unchanged or worse.
