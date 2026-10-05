@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.6 (2026-10-05)
+
 - Store rebalance checkpoints in `partition_gardener_checkpoints` by default (previously `partition_gardener_run_records`)
 - Add `run_record_table_name` so a host can keep another checkpoint table name
 - Rename leftover `partition_gardener_runs` or `partition_gardener_run_records` on first use of the default table name
