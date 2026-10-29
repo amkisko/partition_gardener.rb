@@ -79,6 +79,62 @@ RSpec.describe PartitionGardener::PlanApplier do
     )
   end
 
+  it "resumes detach work when the run record is still at phase detach" do
+    signature = "sig"
+    record = PartitionGardener::RunRecord.start(table_name: "events", plan_signature: signature)
+    expect(record.phase).to eq("detach")
+
+    attached_names = ["events_current"]
+    allow(PartitionGardener::Connection).to receive(:partition_exists?) do |name|
+      name == "events_rebalance_staging" || attached_names.include?(name)
+    end
+    allow(PartitionGardener::Connection).to receive(:partition_attached?) do |_table, name|
+      attached_names.include?(name)
+    end
+    allow(PartitionGardener::Connection).to receive(:count_rows_in_partition_table).and_return(0)
+    allow(applier).to receive_messages(managed_tail_partition_names: ["events_current"], strategy: instance_double(
+      PartitionGardener::Strategy::DateRange,
+      rebalance_default_drain_where_condition: "FALSE",
+      cursor_columns: %w[occurred_on id],
+      segment_for_values_clause: "FROM ('2026-07-01') TO ('2027-07-01')"
+    ))
+    allow(executor).to receive(:detach_partition) do |_table, name|
+      attached_names.delete(name)
+    end
+    allow(executor).to receive(:create_partition) do |_table, name, _clause|
+      attached_names << name
+    end
+    allow(executor).to receive(:drop_table) do |name|
+      attached_names.delete(name)
+    end
+    operations = [
+      PartitionGardener::PlanDiff::Operation.new(
+        :reshape,
+        plan.segments.first,
+        PartitionGardener::Plan::Segment.new(
+          name: "events_current",
+          range_start: Date.new(2026, 7, 1),
+          range_end: Date.new(2026, 9, 1),
+          kind: :filler
+        )
+      )
+    ]
+
+    applier.send(:apply_resuming!, plan, operations, "events_rebalance_staging", record)
+
+    expect(executor).to have_received(:detach_partition).with("events", "events_current")
+    expect(executor).to have_received(:create_partition).at_least(:once)
+  end
+
+  it "refuses to create a segment when a detached table already owns the name" do
+    allow(PartitionGardener::Connection).to receive(:partition_attached?).and_return(false)
+    allow(PartitionGardener::Connection).to receive(:partition_exists?).with("events_current").and_return(true)
+
+    expect {
+      applier.send(:create_segments!, plan.segments.take(1))
+    }.to raise_error(StandardError, /exists but is not attached/)
+  end
+
   it "skips segment creation in hybrid mode" do
     hybrid_config = config.merge(maintenance_backend: :hybrid_layout_only)
     hybrid_applier = described_class.new(hybrid_config, executor: executor)

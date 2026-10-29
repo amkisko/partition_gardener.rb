@@ -60,6 +60,22 @@
       "minimum": 1,
       "maximum": 10
     },
+    "active_id_lo": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "active_id_width": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "current_band_size": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "archive_band_size": {
+      "type": "integer",
+      "minimum": 1
+    },
     "premake_months": {
       "type": "integer",
       "minimum": 0,

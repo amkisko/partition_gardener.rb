@@ -156,11 +156,41 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
     allow(migration).to receive(:fetch_partitions).and_return([])
     allow(migration).to receive(:remove_write_block_trigger)
     allow(migration).to receive(:serial_sequence_pairs).with("events").and_return([["id", "public.events_id_seq"]])
+    allow(migration.connection).to receive(:execute) do |sql|
+      executed_sql << sql
+      [{"max_id" => "9"}]
+    end
+
+    migration.hot_switch_tables
+
+    expect(executed_sql.join).to include("SET DEFAULT nextval('public.events_id_seq'::regclass)")
+    expect(executed_sql).to include(a_string_matching(/ALTER SEQUENCE public\.events_id_seq OWNED BY/))
+    expect(executed_sql).to include(a_string_matching(/setval\('public\.events_id_seq', 9\)/))
+  end
+
+  it "renames shadow children when the live name is a suffix of the shadow prefix" do
+    migration = migration_class.new(
+      current_table: "events",
+      partitioned_table: "p_events",
+      partition_key_column: "occurred_on",
+      swap_lock_timeout: nil
+    )
+
+    allow(migration).to receive(:fetch_partitions).with("events").and_return(%w[p_events_2026_09])
+    allow(migration).to receive_messages(serial_sequence_pairs: [], remove_write_block_trigger: nil)
     allow(migration.connection).to receive(:execute) { |sql| executed_sql << sql }
 
     migration.hot_switch_tables
 
-    expect(executed_sql).to include(a_string_matching(/ALTER SEQUENCE public\.events_id_seq OWNED BY/))
+    expect(executed_sql.join).to include('RENAME TO "events_2026_09"')
+  end
+
+  it "fails closed when sync_stale_column is missing from the target" do
+    allow(migration).to receive(:table_columns).and_return(%w[id occurred_on])
+
+    expect {
+      migration.sync_delta_data
+    }.to raise_error(ArgumentError, /sync_stale_column "updated_at" is missing/)
   end
 
   it "analyzes shadow partition children and parent" do

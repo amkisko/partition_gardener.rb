@@ -52,14 +52,11 @@ module PartitionGardener
     end
 
     def add_years(date, count)
-      value = to_date(date)
-      Date.new(value.year + count, value.month, value.day)
+      to_date(date) >> (count * 12)
     end
 
     def add_months(date, count)
-      base = beginning_of_month(date)
-      month_index = (base.year * 12) + (base.month - 1) + count
-      Date.new(month_index / 12, (month_index % 12) + 1, 1)
+      beginning_of_month(date) >> count
     end
   end
 end

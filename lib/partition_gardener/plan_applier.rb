@@ -139,8 +139,10 @@ module PartitionGardener
     end
 
     def apply_resuming!(plan, operations, staging_name, record)
-      unless record.phase_at_least?("detach")
-        prepare_staging!(staging_name)
+      # RunRecord.start persists phase "detach" before work. Treat detach as done only once
+      # the record has advanced to "segments" or later.
+      unless record.phase_at_least?("segments")
+        prepare_staging!(staging_name) unless Connection.partition_exists?(staging_name)
         detach_managed_tail_partitions!(staging_name, skip_names: keep_names_from(operations))
         drain_default_tail_rows_into_staging!(staging_name)
         record = record.advance!("detach", staging_row_count: staging_row_count(staging_name))
@@ -185,11 +187,21 @@ module PartitionGardener
       segments.each do |segment|
         next if Connection.partition_attached?(table_name, segment.name)
 
+        if Connection.partition_exists?(segment.name)
+          raise StandardError,
+            "partition #{segment.name} exists but is not attached to #{table_name}; " \
+            "CREATE TABLE IF NOT EXISTS … PARTITION OF would no-op and leave rows stranded"
+        end
+
         @executor.create_partition(
           table_name,
           segment.name,
           segment.for_values_clause(strategy)
         )
+
+        unless Connection.partition_attached?(table_name, segment.name)
+          raise StandardError, "failed to attach planned partition #{segment.name} to #{table_name}"
+        end
       end
     end
 
@@ -205,8 +217,10 @@ module PartitionGardener
       operations.select { |operation| operation.action == :drop }.each do |operation|
         partition_name = operation.attached_segment.name
         next if Connection.partition_attached?(@config[:table_name], partition_name)
+        next unless Connection.partition_exists?(partition_name)
+        next unless Connection.count_rows_in_partition_table(partition_name).zero?
 
-        @executor.drop_table(partition_name) if Connection.partition_exists?(partition_name)
+        @executor.drop_table(partition_name)
       end
     end
 

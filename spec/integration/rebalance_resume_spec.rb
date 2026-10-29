@@ -25,6 +25,7 @@ RSpec.describe "rebalance resume", :integration do
 
     insert_row!(table_name, id: 1, occurred_on: hot_month)
     insert_row!(table_name, id: 2, occurred_on: hot_month + 1)
+    rows_before = count_rows(table_name)
 
     config = PartitionGardener::Registry.find_by_table_name(table_name)
     plan = PartitionGardener::Planner.new(config).build
@@ -45,6 +46,36 @@ RSpec.describe "rebalance resume", :integration do
     expect(PartitionGardener::RunRecord.load(table_name)).to be_nil
     expect(PartitionGardener::Connection.partition_exists?(staging_name)).to be(false)
     expect(partition_attached?(table_name, hot_partition)).to be(true)
+    expect(count_rows(table_name)).to eq(rows_before)
+    expect(count_rows(hot_partition)).to eq(2)
+    expect(PartitionGardener::GapDetection.call(table_name)).to be_empty
+  end
+
+  it "continues detach when a run record was started but detach never finished" do
+    hot_month = (today + 2.months).beginning_of_month
+    hot_partition = month_partition_name(table_name, hot_month)
+
+    insert_row!(table_name, id: 1, occurred_on: hot_month)
+    insert_row!(table_name, id: 2, occurred_on: hot_month + 1)
+    rows_before = count_rows(table_name)
+
+    config = PartitionGardener::Registry.find_by_table_name(table_name)
+    plan = PartitionGardener::Planner.new(config).build
+    plan_signature = PartitionGardener::PlanDiff.plan_signature(plan.segments)
+    staging_name = PartitionGardener::Naming.rebalance_staging_partition_name(table_name)
+
+    applier = PartitionGardener::PlanApplier.new(config, job_class_name: "Integration")
+    applier.send(:prepare_staging!, staging_name)
+    PartitionGardener::RunRecord.start(table_name: table_name, plan_signature: plan_signature)
+
+    expect(PartitionGardener::RunRecord.load(table_name).phase).to eq("detach")
+    expect(partition_attached?(table_name, current_name(table_name))).to be(true)
+
+    applier.apply!(plan)
+
+    expect(PartitionGardener::RunRecord.load(table_name)).to be_nil
+    expect(count_rows(table_name)).to eq(rows_before)
+    expect(count_rows(hot_partition)).to eq(2)
     expect(PartitionGardener::GapDetection.call(table_name)).to be_empty
   end
 end

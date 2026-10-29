@@ -175,11 +175,13 @@ module PartitionGardener
         conflict_match = conflict_key.map { |column| "d.#{connection.quote_column_name(column)} = s.#{connection.quote_column_name(column)}" }.join(" AND ")
         update_columns = insert_columns - conflict_key
         update_clause = update_columns.map { |column| "#{connection.quote_column_name(column)} = EXCLUDED.#{connection.quote_column_name(column)}" }.join(", ")
-        stale_check = if partitioned_columns.include?(stale_column)
-          "d.#{connection.quote_column_name(stale_column)} >= s.#{connection.quote_column_name(stale_column)}"
-        else
-          "FALSE"
+        unless current_columns.include?(stale_column) && partitioned_columns.include?(stale_column)
+          raise ArgumentError,
+            "sync_stale_column #{stale_column.inspect} is missing from source or target; " \
+            "refusing unbounded delta sync"
         end
+
+        stale_check = "d.#{connection.quote_column_name(stale_column)} >= s.#{connection.quote_column_name(stale_column)}"
         window_predicate = [
           "#{current_partition_key_expression} >= #{start_date_sql}",
           "AND #{current_partition_key_expression} < #{end_date_sql}",
@@ -209,16 +211,11 @@ module PartitionGardener
           <<~SQL.chomp
             ON CONFLICT (#{conflict_key_str}) DO NOTHING
           SQL
-        elsif partitioned_columns.include?(stale_column)
-          <<~SQL.chomp
-            ON CONFLICT (#{conflict_key_str}) DO UPDATE SET
-              #{update_clause}
-            WHERE #{quoted_table(target_table)}.#{connection.quote_column_name(stale_column)} < EXCLUDED.#{connection.quote_column_name(stale_column)}
-          SQL
         else
           <<~SQL.chomp
             ON CONFLICT (#{conflict_key_str}) DO UPDATE SET
               #{update_clause}
+            WHERE #{quoted_table(target_table)}.#{connection.quote_column_name(stale_column)} < EXCLUDED.#{connection.quote_column_name(stale_column)}
           SQL
         end
 
@@ -406,17 +403,29 @@ module PartitionGardener
       def rename_partition_children!(parent_table, from_prefix, to_prefix)
         fetch_partitions(parent_table).each do |partition|
           partition_name = partition.to_s
-          next if partition_name.include?(to_prefix)
+          bare_name = partition_name.delete('"').split(".").last
+          next unless bare_name.include?(from_prefix)
 
-          new_partition_name = partition_name.gsub(from_prefix, to_prefix)
-          run_sql "ALTER TABLE #{partition} RENAME TO #{new_partition_name}"
-          say "Renamed #{partition} to #{new_partition_name}"
+          new_bare_name = bare_name.sub(from_prefix, to_prefix)
+          next if new_bare_name == bare_name
+
+          run_sql "ALTER TABLE #{partition} RENAME TO #{connection.quote_column_name(new_bare_name)}"
+          say "Renamed #{partition} to #{new_bare_name}"
         end
       end
 
       def repoint_serial_sequences!(table_name, sequence_pairs)
         sequence_pairs.each do |column_name, sequence_name|
-          run_sql "ALTER SEQUENCE #{sequence_name} OWNED BY #{quoted_table(table_name)}.#{connection.quote_column_name(column_name)}"
+          quoted_column = connection.quote_column_name(column_name)
+          live_table = quoted_table(table_name)
+          run_sql <<~SQL
+            ALTER TABLE #{live_table}
+            ALTER COLUMN #{quoted_column}
+            SET DEFAULT nextval(#{connection.quote(sequence_name)}::regclass)
+          SQL
+          run_sql "ALTER SEQUENCE #{sequence_name} OWNED BY #{live_table}.#{quoted_column}"
+          max_id = run_sql("SELECT COALESCE(MAX(#{quoted_column}), 1) AS max_id FROM #{live_table}").first["max_id"].to_i
+          run_sql "SELECT setval(#{connection.quote(sequence_name)}, #{[max_id, 1].max})"
           say "Repointed #{sequence_name} to #{table_name}.#{column_name}"
         end
       end

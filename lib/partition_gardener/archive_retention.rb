@@ -35,15 +35,18 @@ module PartitionGardener
         next if bucket >= DateCalendar.beginning_of_month(cutoff)
 
         if apply_retention
+          keep_table = @config.fetch(:retention_keep_table, false)
           @executor.detach_partition(table_name, partition.name, concurrently: detach_concurrently?)
-          @executor.drop_table(partition.name) unless @config.fetch(:retention_keep_table, false)
+          @executor.drop_table(partition.name) unless keep_table
 
+          action = keep_table ? "Detached" : "Dropped"
           PartitionGardener.configuration.notify(
-            "[PartitionGardener] Dropped archive partition #{partition.name} (retention #{retention_months} months)",
+            "[PartitionGardener] #{action} archive partition #{partition.name} (retention #{retention_months} months)",
             context: {
               table_name: table_name,
               partition_name: partition.name,
               retention_months: retention_months,
+              retention_keep_table: keep_table,
               job: @job_class_name
             }
           )
@@ -51,8 +54,9 @@ module PartitionGardener
           next
         end
 
+        preview_action = @config.fetch(:retention_keep_table, false) ? "detach" : "drop"
         PartitionGardener.configuration.notify(
-          "[PartitionGardener] Would drop archive partition #{partition.name} (bucket #{bucket}, retention #{retention_months} months)",
+          "[PartitionGardener] Would #{preview_action} archive partition #{partition.name} (bucket #{bucket}, retention #{retention_months} months)",
           context: {
             table_name: table_name,
             partition_name: partition.name,

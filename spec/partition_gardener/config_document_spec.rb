@@ -49,6 +49,37 @@ RSpec.describe PartitionGardener::ConfigDocument do
     File.delete(path) if File.exist?(path)
   end
 
+  it "round-trips integer_window band keys through JSON registry" do
+    path = File.join(Dir.tmpdir, "partition_registry_integer_#{Process.pid}.json")
+    File.write(
+      path,
+      JSON.generate(
+        [
+          {
+            "table_name" => "events",
+            "layout" => "integer_window",
+            "partition_key_column" => "id",
+            "conflict_key" => %w[id],
+            "active_id_lo" => 0,
+            "active_id_width" => 10_000,
+            "current_band_size" => 1_000,
+            "archive_band_size" => 10_000
+          }
+        ]
+      )
+    )
+
+    described_class.load_registry_file!(path)
+
+    config = PartitionGardener::Registry.find_by_table_name("events")
+    expect(config[:active_id_lo]).to eq(0)
+    expect(config[:active_id_width]).to eq(10_000)
+    expect(config[:current_band_size]).to eq(1_000)
+    expect(config[:archive_band_size]).to eq(10_000)
+  ensure
+    File.delete(path) if File.exist?(path)
+  end
+
   it "rejects registry entries with unsupported keys" do
     expect {
       described_class.validate_registry_document!(

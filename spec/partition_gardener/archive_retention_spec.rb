@@ -83,12 +83,19 @@ RSpec.describe PartitionGardener::ArchiveRetention do
       range_start: Date.new(2024, 6, 1),
       range_end: Date.new(2024, 7, 1)
     )
+    notifications = []
 
     allow(PartitionGardener::Connection).to receive(:attached_partitions).with("events").and_return([old_partition])
+    PartitionGardener.configure do |configuration|
+      configuration.today_resolver = -> { today }
+      configuration.notifier = ->(message, context: {}) { notifications << [message, context] }
+    end
 
     described_class.new(keep_config, executor: executor).apply!
 
     expect(executor).to have_received(:detach_partition).with("events", "events_2024_06", concurrently: false)
     expect(executor).not_to have_received(:drop_table)
+    expect(notifications.first.first).to include("Detached archive partition")
+    expect(notifications.first.first).not_to include("Dropped archive partition")
   end
 end

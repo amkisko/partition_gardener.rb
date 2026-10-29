@@ -3,10 +3,10 @@ module PartitionGardener
 
   MOVE_BATCH_SIZE: Integer
   FUTURE_MONTH_PARTITION_ROW_THRESHOLD: Integer
-  DEFAULT_STATEMENT_TIMEOUT: ActiveSupport::Duration
+  DEFAULT_STATEMENT_TIMEOUT: Integer
 
   def self.run!: (
-    ?statement_timeout: ActiveSupport::Duration,
+    ?statement_timeout: Integer | Numeric,
     ?job_class_name: String,
     ?continue_on_error: bool,
     ?dry_run: bool,

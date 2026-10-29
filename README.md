@@ -6,7 +6,7 @@ PostgreSQL partition lifecycle: archive, current, and future zones, heat-driven 
 
 ## Requirements
 
-- Ruby >= 3.2
+- Ruby >= 3.4
 - PostgreSQL with declarative partitioning
 - `pg` gem (runtime dependency)
 - Rails >= 7.1 optional — railtie loads when Rails is present and sets Active Record connection plus `Time.zone.today`

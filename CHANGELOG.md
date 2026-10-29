@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.3.7 (2026-10-29)
+
+- Fix rebalance resume so phase `detach` still runs detach and drain until the record advances to `segments`
+- Refuse `CREATE TABLE IF NOT EXISTS … PARTITION OF` when a detached table already owns the planned child name
+- Drop detached remove candidates only when they hold zero rows
+- Rename hot-switch children when the live table name is a suffix of the shadow prefix (for example `p_events` → `events`)
+- Repoint serial sequences after hot-switch by setting `nextval` default and `setval` on the live table
+- Fail closed in `sync_delta_data` when `sync_stale_column` is missing from source or target
+- Sort gap detection bounds with native `Comparable` order so integer windows are not lexicographic
+- Advance `DateCalendar.add_years` through leap days via `Date#>>`
+- Notify detach versus drop for archive retention when `retention_keep_table` is set
+- Export and accept `active_id_lo`, `active_id_width`, `current_band_size`, and `archive_band_size` in JSON registry documents
+- Align README Ruby requirement and RBS `statement_timeout` types with the gemspec
+
 ## 0.3.6 (2026-10-05)
 
 - Store rebalance checkpoints in `partition_gardener_checkpoints` by default (previously `partition_gardener_run_records`)

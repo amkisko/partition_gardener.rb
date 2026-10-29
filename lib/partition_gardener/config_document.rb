@@ -14,6 +14,10 @@ module PartitionGardener
       active_weeks
       active_quarters
       active_years
+      active_id_lo
+      active_id_width
+      current_band_size
+      archive_band_size
       premake_months
       split_row_threshold
       move_batch_size

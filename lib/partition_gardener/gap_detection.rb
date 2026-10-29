@@ -20,7 +20,7 @@ module PartitionGardener
       segments = strategy.attached_tail_segments
       return [] if segments.empty?
 
-      sorted = segments.sort_by { |segment| [segment.range_start.to_s, segment.name] }
+      sorted = segments.sort_by { |segment| [segment.range_start, segment.name] }
       gaps = []
 
       sorted.each_cons(2) do |left, right|
