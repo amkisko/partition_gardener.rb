@@ -1,6 +1,31 @@
 require "spec_helper"
 
 RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
+  let(:db_connection) do
+    tables = {}
+    Object.new.tap do |connection|
+      def connection.quote(value)
+        "'#{value}'"
+      end
+
+      def connection.quote_column_name(name)
+        %("#{name}")
+      end
+
+      def connection.quote_table_name(name)
+        %("#{name}")
+      end
+
+      connection.define_singleton_method(:table_exists?) do |name|
+        tables.fetch(name, false)
+      end
+
+      connection.define_singleton_method(:mark_table_exists!) do |name|
+        tables[name] = true
+      end
+    end
+  end
+
   let(:migration_class) do
     Class.new do
       include PartitionGardener::Migration::HotSwitchConcern
@@ -11,32 +36,6 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
 
       def hot_switch_config
         @config
-      end
-
-      def connection
-        @connection ||= Object.new.tap do |connection|
-          def connection.quote(value)
-            "'#{value}'"
-          end
-
-          def connection.quote_column_name(name)
-            %("#{name}")
-          end
-
-          def connection.quote_table_name(name)
-            %("#{name}")
-          end
-
-          def connection.table_exists?(name)
-            @table_exists ||= {}
-            @table_exists.fetch(name, false)
-          end
-
-          def connection.mark_table_exists!(name)
-            @table_exists ||= {}
-            @table_exists[name] = true
-          end
-        end
       end
 
       def say(_message)
@@ -64,12 +63,13 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
     PartitionGardener.configure do |configuration|
       configuration.today_resolver = -> { Date.new(2026, 7, 5) }
       configuration.schema_name = "public"
+      configuration.connection_resolver = -> { db_connection }
     end
 
     allow(migration).to receive(:table_columns).and_return(%w[id occurred_on updated_at])
 
     insert_results = [2, 2, 1, 0]
-    allow(migration.connection).to receive(:execute) do |sql|
+    allow(db_connection).to receive(:execute) do |sql|
       executed_sql << sql
       if sql.include?("SELECT COUNT")
         [{"count" => "5"}]
@@ -121,7 +121,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
 
     allow(migration).to receive_messages(fetch_partitions: [], serial_sequence_pairs: [])
     allow(migration).to receive(:remove_write_block_trigger)
-    allow(migration.connection).to receive(:execute) { |sql| executed_sql << sql }
+    allow(db_connection).to receive(:execute) { |sql| executed_sql << sql }
 
     migration.hot_switch_tables
 
@@ -138,7 +138,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
 
     allow(migration).to receive_messages(fetch_partitions: [], serial_sequence_pairs: [])
     allow(migration).to receive(:remove_write_block_trigger)
-    allow(migration.connection).to receive(:execute) { |sql| executed_sql << sql }
+    allow(db_connection).to receive(:execute) { |sql| executed_sql << sql }
 
     migration.hot_switch_tables
 
@@ -156,7 +156,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
     allow(migration).to receive(:fetch_partitions).and_return([])
     allow(migration).to receive(:remove_write_block_trigger)
     allow(migration).to receive(:serial_sequence_pairs).with("events").and_return([["id", "public.events_id_seq"]])
-    allow(migration.connection).to receive(:execute) do |sql|
+    allow(db_connection).to receive(:execute) do |sql|
       executed_sql << sql
       [{"max_id" => "9"}]
     end
@@ -178,7 +178,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
 
     allow(migration).to receive(:fetch_partitions).with("events").and_return(%w[p_events_2026_09])
     allow(migration).to receive_messages(serial_sequence_pairs: [], remove_write_block_trigger: nil)
-    allow(migration.connection).to receive(:execute) { |sql| executed_sql << sql }
+    allow(db_connection).to receive(:execute) { |sql| executed_sql << sql }
 
     migration.hot_switch_tables
 
@@ -195,7 +195,7 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
 
   it "analyzes shadow partition children and parent" do
     allow(migration).to receive(:fetch_partitions).with("events_partitioned").and_return(%w[events_partitioned_2026_07])
-    allow(migration.connection).to receive(:execute) { |sql| executed_sql << sql }
+    allow(db_connection).to receive(:execute) { |sql| executed_sql << sql }
 
     migration.analyze_shadow_partitions!
 
@@ -231,5 +231,84 @@ RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
 
     expect(migration.send(:table_columns, "events")).to eq(["id"])
     expect(connection).to have_received(:execute)
+  end
+
+  it "prefers the migration-scoped ActiveRecord connection when exec_migration set @connection" do
+    require "active_record"
+
+    migration_connection = instance_double(
+      PartitionGardener::PgConnection,
+      quote: "'public'",
+      quote_column_name: '"id"',
+      quote_table_name: '"events"'
+    )
+    allow(migration_connection).to receive(:execute).and_return([{"column_name" => "id"}])
+
+    fallback = instance_double(PartitionGardener::PgConnection)
+    allow(fallback).to receive(:execute)
+
+    PartitionGardener.configure do |configuration|
+      configuration.schema_name = "public"
+      configuration.connection_resolver = -> { fallback }
+    end
+
+    migration = Class.new(ActiveRecord::Migration[ActiveRecord::Migration.current_version]) do
+      include PartitionGardener::Migration::HotSwitchConcern
+
+      const_set(:HOT_SWITCH_CONFIG, {
+        current_table: "events",
+        partitioned_table: "events_partitioned",
+        partition_key_column: "occurred_on"
+      })
+    end.new
+    migration.instance_variable_set(:@connection, migration_connection)
+
+    expect(migration.send(:table_columns, "events")).to eq(["id"])
+    expect(migration_connection).to have_received(:execute)
+    expect(fallback).not_to have_received(:execute)
+  end
+
+  it "keeps ActiveRecord::Migration#connection public so DefaultStrategy does not recurse" do
+    require "active_record"
+
+    fake = Object.new
+    def fake.respond_to?(method, include_private = false)
+      return true if method == :create_table
+      return true if method == :execute
+      super
+    end
+
+    def fake.create_table(*)
+      :ok
+    end
+
+    def fake.execute(*)
+      []
+    end
+
+    PartitionGardener.configure do |configuration|
+      configuration.connection_resolver = -> { fake }
+    end
+
+    migration = Class.new(ActiveRecord::Migration[ActiveRecord::Migration.current_version]) do
+      include PartitionGardener::Migration::HotSwitchConcern
+
+      const_set(:HOT_SWITCH_CONFIG, {
+        current_table: "events",
+        partitioned_table: "events_partitioned",
+        partition_key_column: "occurred_on"
+      })
+    end.new
+    migration.verbose = false
+    migration.instance_variable_set(:@connection, fake)
+
+    expect(migration.public_methods).to include(:connection)
+    expect(migration.method(:connection).owner).to eq(ActiveRecord::Migration)
+
+    expect {
+      migration.send(:execution_strategy).respond_to?(:create_table)
+    }.not_to raise_error
+
+    expect(migration.create_table(:example)).to eq(:ok)
   end
 end

@@ -42,7 +42,7 @@ module PartitionGardener
 
         all_months.each do |identifier|
           partition_name = partition_name_format.call(identifier).gsub(/^#{current_table}_/, "#{partitioned_table}_")
-          next if connection.table_exists?(partition_name)
+          next if gardener_connection.table_exists?(partition_name)
 
           for_values_clause = partition_definition.call(identifier)
           sql = <<~SQL
@@ -149,12 +149,12 @@ module PartitionGardener
         derived_columns = config[:derived_columns] || {}
         stale_column = config[:sync_stale_column] || "updated_at"
         base_key = partition_key_column.to_s.split("::").first.strip
-        current_partition_key_expression = config[:current_partition_key_expression] || "s.#{connection.quote_column_name(base_key)}"
+        current_partition_key_expression = config[:current_partition_key_expression] || "s.#{gardener_connection.quote_column_name(base_key)}"
         today = PartitionGardener.configuration.today
         start_date = DateCalendar.add_months(today, -3)
         end_date = DateCalendar.add_months(today, 3)
-        start_date_sql = connection.quote(start_date)
-        end_date_sql = connection.quote(end_date)
+        start_date_sql = gardener_connection.quote(start_date)
+        end_date_sql = gardener_connection.quote(end_date)
 
         say "Syncing delta data from #{source_table} to #{target_table}"
 
@@ -162,26 +162,26 @@ module PartitionGardener
         partitioned_columns = table_columns(target_table)
         common_columns = current_columns & partitioned_columns
         insert_columns = (common_columns + derived_columns.keys) & partitioned_columns
-        columns_str = insert_columns.map { |column| connection.quote_column_name(column) }.join(", ")
+        columns_str = insert_columns.map { |column| gardener_connection.quote_column_name(column) }.join(", ")
         inner_select_columns_str = insert_columns.map do |column|
           if derived_columns.key?(column)
-            "#{derived_columns[column]} AS #{connection.quote_column_name(column)}"
+            "#{derived_columns[column]} AS #{gardener_connection.quote_column_name(column)}"
           else
-            "s.#{connection.quote_column_name(column)}"
+            "s.#{gardener_connection.quote_column_name(column)}"
           end
         end.join(", ")
 
-        conflict_key_str = conflict_key.map { |column| connection.quote_column_name(column) }.join(", ")
-        conflict_match = conflict_key.map { |column| "d.#{connection.quote_column_name(column)} = s.#{connection.quote_column_name(column)}" }.join(" AND ")
+        conflict_key_str = conflict_key.map { |column| gardener_connection.quote_column_name(column) }.join(", ")
+        conflict_match = conflict_key.map { |column| "d.#{gardener_connection.quote_column_name(column)} = s.#{gardener_connection.quote_column_name(column)}" }.join(" AND ")
         update_columns = insert_columns - conflict_key
-        update_clause = update_columns.map { |column| "#{connection.quote_column_name(column)} = EXCLUDED.#{connection.quote_column_name(column)}" }.join(", ")
+        update_clause = update_columns.map { |column| "#{gardener_connection.quote_column_name(column)} = EXCLUDED.#{gardener_connection.quote_column_name(column)}" }.join(", ")
         unless current_columns.include?(stale_column) && partitioned_columns.include?(stale_column)
           raise ArgumentError,
             "sync_stale_column #{stale_column.inspect} is missing from source or target; " \
             "refusing unbounded delta sync"
         end
 
-        stale_check = "d.#{connection.quote_column_name(stale_column)} >= s.#{connection.quote_column_name(stale_column)}"
+        stale_check = "d.#{gardener_connection.quote_column_name(stale_column)} >= s.#{gardener_connection.quote_column_name(stale_column)}"
         window_predicate = [
           "#{current_partition_key_expression} >= #{start_date_sql}",
           "AND #{current_partition_key_expression} < #{end_date_sql}",
@@ -191,7 +191,7 @@ module PartitionGardener
           "AND #{stale_check}",
           ")"
         ].join(" ")
-        order_clause = conflict_key.map { |column| "s.#{connection.quote_column_name(column)}" }.join(", ")
+        order_clause = conflict_key.map { |column| "s.#{gardener_connection.quote_column_name(column)}" }.join(", ")
 
         count_sql = <<~SQL
           SELECT COUNT(*) AS count
@@ -215,7 +215,7 @@ module PartitionGardener
           <<~SQL.chomp
             ON CONFLICT (#{conflict_key_str}) DO UPDATE SET
               #{update_clause}
-            WHERE #{quoted_table(target_table)}.#{connection.quote_column_name(stale_column)} < EXCLUDED.#{connection.quote_column_name(stale_column)}
+            WHERE #{quoted_table(target_table)}.#{gardener_connection.quote_column_name(stale_column)} < EXCLUDED.#{gardener_connection.quote_column_name(stale_column)}
           SQL
         end
 
@@ -249,8 +249,8 @@ module PartitionGardener
         sql = <<~SQL
           SELECT column_name
           FROM information_schema.columns
-          WHERE table_schema = #{connection.quote(PartitionGardener.configuration.schema_name)}
-            AND table_name = #{connection.quote(table_name)}
+          WHERE table_schema = #{gardener_connection.quote(PartitionGardener.configuration.schema_name)}
+            AND table_name = #{gardener_connection.quote(table_name)}
           ORDER BY ordinal_position
         SQL
 
@@ -283,7 +283,7 @@ module PartitionGardener
         sql = <<~SQL
           SELECT inhrelid::regclass AS child
           FROM pg_catalog.pg_inherits
-          WHERE inhparent = #{connection.quote(table_name)}::regclass
+          WHERE inhparent = #{gardener_connection.quote(table_name)}::regclass
         SQL
         run_sql(sql).map { |row| row["child"] }
       end
@@ -294,7 +294,7 @@ module PartitionGardener
         partitioned_table = config[:partitioned_table]
         old_table = "#{current_table}_old"
 
-        return if connection.table_exists?(old_table)
+        return if gardener_connection.table_exists?(old_table)
 
         say "Performing hot switch: #{current_table} -> #{partitioned_table}"
 
@@ -323,8 +323,8 @@ module PartitionGardener
         partitioned_table = config[:partitioned_table]
         old_table = "#{current_table}_old"
 
-        return unless connection.table_exists?(old_table)
-        return if connection.table_exists?(partitioned_table)
+        return unless gardener_connection.table_exists?(old_table)
+        return if gardener_connection.table_exists?(partitioned_table)
 
         say "Performing hot unswitch: #{current_table} -> #{partitioned_table}"
 
@@ -351,7 +351,7 @@ module PartitionGardener
 
         table_columns(table_name).filter_map do |column_name|
           sql = <<~SQL
-            SELECT pg_get_serial_sequence(#{connection.quote(qualified_table)}, #{connection.quote(column_name)}) AS sequence_name
+            SELECT pg_get_serial_sequence(#{gardener_connection.quote(qualified_table)}, #{gardener_connection.quote(column_name)}) AS sequence_name
           SQL
           result = run_sql(sql).first
           sequence_name = result["sequence_name"]
@@ -397,7 +397,7 @@ module PartitionGardener
         timeout = swap_lock_timeout_setting
         return if timeout.nil?
 
-        run_sql "SET LOCAL lock_timeout = #{connection.quote(timeout)}"
+        run_sql "SET LOCAL lock_timeout = #{gardener_connection.quote(timeout)}"
       end
 
       def rename_partition_children!(parent_table, from_prefix, to_prefix)
@@ -409,23 +409,23 @@ module PartitionGardener
           new_bare_name = bare_name.sub(from_prefix, to_prefix)
           next if new_bare_name == bare_name
 
-          run_sql "ALTER TABLE #{partition} RENAME TO #{connection.quote_column_name(new_bare_name)}"
+          run_sql "ALTER TABLE #{partition} RENAME TO #{gardener_connection.quote_column_name(new_bare_name)}"
           say "Renamed #{partition} to #{new_bare_name}"
         end
       end
 
       def repoint_serial_sequences!(table_name, sequence_pairs)
         sequence_pairs.each do |column_name, sequence_name|
-          quoted_column = connection.quote_column_name(column_name)
+          quoted_column = gardener_connection.quote_column_name(column_name)
           live_table = quoted_table(table_name)
           run_sql <<~SQL
             ALTER TABLE #{live_table}
             ALTER COLUMN #{quoted_column}
-            SET DEFAULT nextval(#{connection.quote(sequence_name)}::regclass)
+            SET DEFAULT nextval(#{gardener_connection.quote(sequence_name)}::regclass)
           SQL
           run_sql "ALTER SEQUENCE #{sequence_name} OWNED BY #{live_table}.#{quoted_column}"
           max_id = run_sql("SELECT COALESCE(MAX(#{quoted_column}), 1) AS max_id FROM #{live_table}").first["max_id"].to_i
-          run_sql "SELECT setval(#{connection.quote(sequence_name)}, #{[max_id, 1].max})"
+          run_sql "SELECT setval(#{gardener_connection.quote(sequence_name)}, #{[max_id, 1].max})"
           say "Repointed #{sequence_name} to #{table_name}.#{column_name}"
         end
       end
@@ -440,15 +440,20 @@ module PartitionGardener
       end
 
       def run_sql(sql)
-        connection.execute(sql)
+        gardener_connection.execute(sql)
       end
 
-      def connection
+      # ActiveRecord::Migration#exec_migration assigns @connection for the target database.
+      # Prefer that adapter during migrate; otherwise use the configured resolver.
+      def gardener_connection
+        migration_connection = instance_variable_get(:@connection) if instance_variable_defined?(:@connection)
+        return migration_connection if migration_connection
+
         PartitionGardener.configuration.connection
       end
 
       def quoted_table(name)
-        connection.quote_table_name(name)
+        gardener_connection.quote_table_name(name)
       end
     end
   end

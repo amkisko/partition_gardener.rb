@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.3.8 (2026-11-05)
+
+- Fix hot-switch migrations aborting with `SystemStackError` when included into `ActiveRecord::Migration` on Rails 8 (private `connection` override recursed through `DefaultStrategy`)
+
 ## 0.3.7 (2026-10-29)
 
 - Fix rebalance resume so phase `detach` still runs detach and drain until the record advances to `segments`
