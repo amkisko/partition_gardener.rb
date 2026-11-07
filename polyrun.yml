@@ -1,5 +1,12 @@
 version: 1
 
+coverage:
+  output_path: coverage
+  formats:
+    - html
+    - cobertura
+    - console
+
 # Polyrun — shard env + spec list. spec/spec_paths.txt is written from paths_build before plan/run-shards.
 
 partition:
