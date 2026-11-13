@@ -3,6 +3,7 @@ spec/integration/integer_window_maintenance_spec.rb
 spec/integration/hash_branches_maintenance_spec.rb
 spec/integration/pg_connection_maintenance_spec.rb
 spec/integration/premake_monthly_spec.rb
+spec/integration/partman_probe_transaction_spec.rb
 spec/integration/rebalance_resume_spec.rb
 spec/integration/advisory_lock_spec.rb
 spec/integration/executor_move_spec.rb
@@ -13,6 +14,7 @@ spec/partition_gardener/advisory_lock_spec.rb
 spec/partition_gardener/archive_retention_spec.rb
 spec/partition_gardener/attach_retry_spec.rb
 spec/partition_gardener/audit_spec.rb
+spec/partition_gardener/boot_footprint_spec.rb
 spec/partition_gardener/calendar_year_spec.rb
 spec/partition_gardener/child_column_align_spec.rb
 spec/partition_gardener/cli_spec.rb
@@ -39,6 +41,7 @@ spec/partition_gardener/run_record_spec.rb
 spec/partition_gardener/run_spec.rb
 spec/partition_gardener/sliding_window_spec.rb
 spec/partition_gardener/sql_run_record_store_spec.rb
+spec/partition_gardener/stdlib_extensions_spec.rb
 spec/partition_gardener/strategy_spec.rb
 spec/partition_gardener/templates_spec.rb
 spec/release_spec.rb

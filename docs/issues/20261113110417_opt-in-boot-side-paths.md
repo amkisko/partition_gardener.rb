@@ -20,6 +20,7 @@ Andrei Makarov (@amkisko)
 
 ## Next
 
+- Publish `0.3.9` (`make release` after commit and clean tree).
 - Host apps that relied on silent Railtie defaults must add `partition_gardener/railtie` to the Gemfile require list (or set resolvers in an initializer, which many already do).
 - Hot-switch migrations must `require "partition_gardener/migration/hot_switch_concern"`.
 - Optional later: further slim the default require if app boot budgets demand it; keep that behind an explicit runtime entry point rather than silent autoload.

@@ -20,7 +20,8 @@ def timed_require(label, &block)
   elapsed_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000
   after_features = $LOADED_FEATURES.size
   after_rss = rss_kb
-  gardener = $LOADED_FEATURES.count { |path| path.include?("partition_gardener") }
+  # Checkout path contains "partition_gardener"; count only this gem's lib files.
+  gardener = $LOADED_FEATURES.count { |path| path.match?(%r{(?:/|^)lib/partition_gardener(?:\.rb|/)}) }
   {
     label: label,
     ms: elapsed_ms.round(2),
@@ -36,7 +37,8 @@ samples = runs.times.map do
     start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     require "partition_gardener"
     elapsed = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000
-    features = $LOADED_FEATURES.select { |path| path.include?("partition_gardener") }
+    # Checkout path contains "partition_gardener"; count only this gem's lib files.
+    features = $LOADED_FEATURES.select { |path| path.match?(%r{(?:/|^)lib/partition_gardener(?:\.rb|/)}) }
     payload = {
       ms: elapsed.round(3),
       gardener_files: features.size,

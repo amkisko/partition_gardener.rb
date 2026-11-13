@@ -16,7 +16,8 @@ Andrei Makarov (@amkisko)
 
 ## Next
 
-- Include under Unreleased until the next patch cut.
+- Cut into CHANGELOG under `## 0.3.9 (2026-11-13)`.
+- Commit, tag `0.3.9`, push, and run `make release`.
 
 ## Source
 

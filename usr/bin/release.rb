@@ -55,6 +55,7 @@ version = PartitionGardener::VERSION
 gem_file = "#{gem_name}-#{version}.gem"
 
 ReleaseVersionCheck.require_changelog_version!(version: version)
+changelog_notes = ReleaseVersionCheck.require_changelog_notes!(version: version)
 ReleaseVersionCheck.warn_if_already_released(version: version, package_name: gem_name, registry: :rubygems)
 
 execute_command("gem build #{gemspec}")
@@ -67,7 +68,10 @@ if answer.nil? || (answer != "" && !answer.casecmp?("y"))
   exit 1
 end
 
+notes_path = "tmp/github-release-notes.md"
+File.write(notes_path, changelog_notes)
+
 execute_command("gem push #{gem_file}")
 execute_command("git tag #{version}")
 execute_command("git push origin HEAD \"refs/tags/#{version}\"")
-execute_command("gh release create #{version} --generate-notes")
+execute_command("gh release create #{version} --notes-file #{notes_path}")

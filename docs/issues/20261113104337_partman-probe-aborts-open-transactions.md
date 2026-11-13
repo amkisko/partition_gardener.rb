@@ -18,7 +18,7 @@ Andrei Makarov (@amkisko)
 
 ## Next
 
-- Ship in the next patch after 0.3.8; host apps can drop prepend workarounds once that version is locked.
+- Publish `0.3.9` (`make release` after commit and clean tree). Host apps can drop prepend workarounds once that version is locked.
 - Optional later: cache the relation presence check across a register burst if register volume ever makes the extra round trip when partman is installed measurable.
 
 ## Source
