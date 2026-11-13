@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Make Railtie, CLI, HotSwitchConcern, and Integer duration helpers opt-in requires instead of loading them from the default `partition_gardener` require
+
 ## 0.3.8 (2026-11-05)
 
 - Fix hot-switch migrations aborting with `SystemStackError` when included into `ActiveRecord::Migration` on Rails 8 (private `connection` override recursed through `DefaultStrategy`)

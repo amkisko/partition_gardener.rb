@@ -34,6 +34,8 @@ For cross-database copies (production → staging, or a second cluster during mi
 Use `PartitionGardener::Migration::HotSwitchConcern` in a migration:
 
 ```ruby
+require "partition_gardener/migration/hot_switch_concern"
+
 class PartitionEventsHotSwitch < ActiveRecord::Migration[8.0]
   include PartitionGardener::Migration::HotSwitchConcern
 

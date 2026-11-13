@@ -1,4 +1,5 @@
 require "spec_helper"
+require "partition_gardener/migration/hot_switch_concern"
 require_relative "support/database"
 require_relative "support/fixtures"
 

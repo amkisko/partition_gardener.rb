@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 
 require "partition_gardener"
+require "partition_gardener/stdlib_extensions"
+PartitionGardener.install_stdlib_extensions!
 require "partition_gardener/cli"
 
 PartitionGardener::CLI.start

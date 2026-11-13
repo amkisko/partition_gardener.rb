@@ -1,4 +1,5 @@
 require "spec_helper"
+require "partition_gardener/migration/hot_switch_concern"
 
 RSpec.describe PartitionGardener::Migration::HotSwitchConcern do
   let(:db_connection) do

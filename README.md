@@ -49,8 +49,8 @@ Complements migration gems (e.g. [pg_party](https://github.com/rkrage/pg_party))
 ## Quick start
 
 ```ruby
-# Gemfile
-gem "partition_gardener"
+# Gemfile — require the railtie only when you want Rails connection/today defaults
+gem "partition_gardener", require: ["partition_gardener", "partition_gardener/railtie"]
 ```
 
 ```ruby
@@ -143,9 +143,11 @@ See [docs/partition_landscape.md](docs/partition_landscape.md) for the template 
 
 ## Hot-switch migrations
 
-`PartitionGardener::Migration::HotSwitchConcern` (alias `HotSwitchPartitionedTable`) consolidates cutover migration helpers.
+`PartitionGardener::Migration::HotSwitchConcern` (alias `HotSwitchPartitionedTable`) consolidates cutover migration helpers. Require it explicitly in the migration file:
 
 ```ruby
+require "partition_gardener/migration/hot_switch_concern"
+
 class PartitionEventsHotSwitch < ActiveRecord::Migration[8.0]
   include PartitionGardener::Migration::HotSwitchConcern
 

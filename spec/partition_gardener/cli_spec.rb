@@ -1,4 +1,5 @@
 require "spec_helper"
+require "partition_gardener/cli"
 
 RSpec.describe PartitionGardener::CLI do
   def capture_stdout

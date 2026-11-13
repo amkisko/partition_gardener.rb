@@ -10,6 +10,9 @@ Pick layout and maintainer first ([decision_flow.md](decision_flow.md), [tooling
 ## Global configuration
 
 ```ruby
+# Gemfile — railtie is opt-in (sets Active Record + Time.zone defaults)
+gem "partition_gardener", require: ["partition_gardener", "partition_gardener/railtie"]
+
 # config/initializers/partition_gardener.rb
 PartitionGardener.configure do |config|
   config.notifier = ->(message_or_error, context: {}) {
@@ -25,7 +28,14 @@ PartitionGardener.configure do |config|
 end
 ```
 
-When the gem loads inside Rails, the railtie sets `connection_resolver` and `today_resolver` automatically.
+Default `require "partition_gardener"` does not load the Railtie, CLI, hot-switch concern, or Integer duration helpers. Opt in:
+
+- `require "partition_gardener/railtie"` — Rails defaults for `connection_resolver` and `today_resolver` (disable with `config.partition_gardener.auto_configure = false` in `config/application.rb`)
+- `require "partition_gardener/cli"` — CLI (also loaded by `exe/partition_gardener`)
+- `require "partition_gardener/migration/hot_switch_concern"` — cutover migrations
+- `require "partition_gardener/stdlib_extensions"` then `PartitionGardener.install_stdlib_extensions!` — `Integer#minutes` / `#seconds` when Active Support is absent
+
+When the railtie is required and `auto_configure` is true, it sets `connection_resolver` and `today_resolver` during Rails initialization.
 
 `notifier` (default: no-op proc) — receives errors and info messages with a `context:` hash (`table_name`, `job`, `action`, …).
 

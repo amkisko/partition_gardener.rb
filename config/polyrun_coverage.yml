@@ -5,4 +5,5 @@ track_under:
 reject_patterns:
   - "/lib/partition_gardener/version.rb"
   - "/lib/partition_gardener/rails.rb"
+  - "/lib/partition_gardener/railtie.rb"
 minimum_line_percent: 85

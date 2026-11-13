@@ -3,8 +3,6 @@ require "date"
 require_relative "partition_gardener/version"
 require_relative "partition_gardener/date_calendar"
 require_relative "partition_gardener/date_bucket"
-require_relative "partition_gardener/stdlib_extensions"
-require "pg"
 require_relative "partition_gardener/pg_connection"
 require_relative "partition_gardener/blank"
 require_relative "partition_gardener/predicate"
@@ -53,8 +51,12 @@ require_relative "partition_gardener/audit"
 require_relative "partition_gardener/archive_retention"
 require_relative "partition_gardener/registry"
 require_relative "partition_gardener/config_document"
-require_relative "partition_gardener/cli"
-require_relative "partition_gardener/migration/hot_switch_concern"
+
+# Side paths are opt-in (not loaded by default require):
+#   require "partition_gardener/cli"
+#   require "partition_gardener/migration/hot_switch_concern"
+#   require "partition_gardener/railtie"
+#   require "partition_gardener/stdlib_extensions" then PartitionGardener.install_stdlib_extensions!
 
 module PartitionGardener
   MOVE_BATCH_SIZE = 10_000
@@ -213,5 +215,3 @@ module PartitionGardener
     private :plan_all, :emit_run_metadata, :run_single_table!
   end
 end
-
-require_relative "partition_gardener/rails" if defined?(Rails::Railtie)
