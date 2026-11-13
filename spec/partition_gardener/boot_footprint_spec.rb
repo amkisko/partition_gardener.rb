@@ -18,7 +18,7 @@ RSpec.describe "partition_gardener boot footprint" do
       require "json"
       require "partition_gardener"
       # Checkout path contains "partition_gardener"; count only this gem's lib files.
-      features = $LOADED_FEATURES.select { |path| path.match?(%r{(?:/|^)lib/partition_gardener(?:\.rb|/)}) }
+      features = $LOADED_FEATURES.select { |path| path.match?(%r{(?:/|^)lib/partition_gardener(?:[.]rb|/)}) }
       puts({
         gardener_files: features.size,
         cli: features.any? { |path| path.end_with?("/cli.rb") },

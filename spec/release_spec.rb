@@ -4,6 +4,26 @@ require "tmpdir"
 require_relative "../usr/lib/release_version_check"
 
 RSpec.describe ReleaseVersionCheck do
+  let(:bootstrap) do
+    <<~RUBY
+      require_relative "usr/lib/release_version_check"
+      module ReleaseVersionCheck
+        def self.warn_if_already_released(**); end
+      end
+      Kernel.prepend(Module.new do
+        def system(*command)
+          puts "EXEC:\#{command.last}"
+          true
+        end
+
+        def `(command)
+          ""
+        end
+      end)
+      load "usr/bin/release.rb"
+    RUBY
+  end
+
   describe ".changelog_notes_for" do
     def write_changelog(content)
       path = File.join(Dir.mktmpdir, "CHANGELOG.md")
@@ -27,7 +47,7 @@ RSpec.describe ReleaseVersionCheck do
         - Older
       MD
 
-      expect(ReleaseVersionCheck.changelog_notes_for("0.3.9", path: path)).to eq("- First\n- Second\n")
+      expect(described_class.changelog_notes_for("0.3.9", path: path)).to eq("- First\n- Second\n")
     end
 
     it "accepts bracketed Keep a Changelog headings" do
@@ -37,7 +57,7 @@ RSpec.describe ReleaseVersionCheck do
         - Notes
       MD
 
-      expect(ReleaseVersionCheck.changelog_notes_for("1.2.3", path: path)).to eq("- Notes\n")
+      expect(described_class.changelog_notes_for("1.2.3", path: path)).to eq("- Notes\n")
     end
 
     it "returns nil when the version heading is missing or the section has no body" do
@@ -49,29 +69,9 @@ RSpec.describe ReleaseVersionCheck do
         - Older
       MD
 
-      expect(ReleaseVersionCheck.changelog_notes_for("9.9.9", path: path)).to be_nil
-      expect(ReleaseVersionCheck.changelog_notes_for("0.3.9", path: path)).to be_nil
+      expect(described_class.changelog_notes_for("9.9.9", path: path)).to be_nil
+      expect(described_class.changelog_notes_for("0.3.9", path: path)).to be_nil
     end
-  end
-
-  let(:bootstrap) do
-    <<~RUBY
-      require_relative "usr/lib/release_version_check"
-      module ReleaseVersionCheck
-        def self.warn_if_already_released(**); end
-      end
-      Kernel.prepend(Module.new do
-        def system(*command)
-          puts "EXEC:\#{command.last}"
-          true
-        end
-
-        def `(command)
-          ""
-        end
-      end)
-      load "usr/bin/release.rb"
-    RUBY
   end
 
   it "refuses to publish when standard input ends without an answer" do
