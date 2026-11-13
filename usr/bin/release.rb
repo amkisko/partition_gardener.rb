@@ -74,4 +74,5 @@ File.write(notes_path, changelog_notes)
 execute_command("gem push #{gem_file}")
 execute_command("git tag #{version}")
 execute_command("git push origin HEAD \"refs/tags/#{version}\"")
-execute_command("gh release create #{version} --notes-file #{notes_path}")
+# --notes-file alone leaves release name empty; Discord/Slack then show "undefined".
+execute_command("gh release create #{version} --title #{version} --notes-file #{notes_path}")

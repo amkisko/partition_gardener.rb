@@ -90,7 +90,7 @@ RSpec.describe ReleaseVersionCheck do
       expect(status).to be_success, error
       expect(output).to include("EXEC:gem push")
       expect(output).to include("EXEC:gh release create")
-      expect(output).to include("--notes-file tmp/github-release-notes.md")
+      expect(output).to match(/EXEC:gh release create \S+ --title \S+ --notes-file tmp\/github-release-notes\.md/)
       expect(output).not_to include("--generate-notes")
     end
   end

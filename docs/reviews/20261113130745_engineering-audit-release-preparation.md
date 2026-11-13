@@ -14,7 +14,7 @@ Andrei Makarov (@amkisko)
 
 - Bump `PartitionGardener::VERSION` and path-gem lockfiles to 0.3.9. Move the Unreleased bullets under `## 0.3.9 (2026-11-13)`.
 - Fix boot footprint counting so paths under a checkout named `partition_gardener.rb` (including `vendor/bundle`) do not inflate `gardener_files`. Loose filter reported 68; `lib/partition_gardener` filter reports 52 and restores the `< 55` contract.
-- Publish GitHub release body from the matching `CHANGELOG.md` section (`gh release create --notes-file`), not commit auto-notes.
+- Publish GitHub release body from the matching `CHANGELOG.md` section (`gh release create --title VERSION --notes-file`), not commit auto-notes. First cut omitted `--title` and left `name` empty; repaired live `0.3.9` and the script.
 - Final serial JSON report: 196 examples, 0 failures with `INTEGRATION=1` and PostgreSQL; no pending examples. Parallel polyrun with five workers: exit 0.
 - Required project checks passed: rubocop (84 files, no offenses), rbs validate, `INTEGRATION=1` polyrun parallel-rspec. Environment: Ruby 4.0.2, `BUNDLE_PATH=vendor/bundle`.
 - `release_spec`: 2 examples, 0 failures.
