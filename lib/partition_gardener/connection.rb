@@ -246,6 +246,13 @@ module PartitionGardener
     end
 
     def partman_parent_configured?(table_name)
+      # to_regclass returns null when the relation is missing; a direct SELECT would
+      # abort an open transaction even if Ruby rescues StatementInvalid.
+      relation = connection.execute(
+        "SELECT to_regclass('partman.part_config')::text AS relation_oid"
+      ).first
+      return false if Blank.blank?(relation&.fetch("relation_oid", nil))
+
       qualified_name = "#{schema_name}.#{table_name}"
       sql = <<~SQL
         SELECT 1

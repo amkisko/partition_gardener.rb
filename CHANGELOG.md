@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Make Railtie, CLI, HotSwitchConcern, and Integer duration helpers opt-in requires instead of loading them from the default `partition_gardener` require
+- Fix register-time `partman.part_config` probe so a missing relation does not abort an open Postgres transaction (`PG::InFailedSqlTransaction` after Ruby rescued `StatementInvalid`)
 
 ## 0.3.8 (2026-11-05)
 
