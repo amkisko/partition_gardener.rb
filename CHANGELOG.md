@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.10 (2026-11-19)
+
 - Fix monthly premake so overlapping rows already in the default partition are moved into the new month child and attached under a parent write lock before create, instead of failing with a partition check violation
 
 ## 0.3.9 (2026-11-13)

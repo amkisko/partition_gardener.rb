@@ -17,7 +17,8 @@ Andrei Makarov
 
 ## Next
 
-- Distill into CHANGELOG.md Unreleased; cut a patch release when ready.
+- Cut into CHANGELOG under `## 0.3.10 (2026-11-19)`.
+- Commit, tag `0.3.10`, push, and run `make release`.
 
 ## Source
 

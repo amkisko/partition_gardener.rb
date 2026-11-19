@@ -18,8 +18,7 @@ Andrei Makarov
 
 ## Next
 
-- Ship in the next patch release after Unreleased notes land.
-- Host apps that added a one-off preparation step before `run!` can drop it once this version is locked.
+- Publish `0.3.10` (`make release` after commit and clean tree). Host apps that added a one-off preparation step before `run!` can drop it once that version is locked.
 
 ## Source
 
