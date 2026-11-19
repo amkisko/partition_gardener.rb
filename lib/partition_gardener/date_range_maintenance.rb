@@ -234,47 +234,117 @@ module PartitionGardener
 
       return if Connection.partition_attached?(table_name, partition_name)
 
-      if Connection.count_rows_in_partition(source_partition_name, where_condition).positive?
-        @executor.ensure_detached_partition_table!(table_name, partition_name, conflict_key: conflict_key)
-        @executor.drain_rows_between_partitions!(
-          source_partition_name,
-          partition_name,
-          where_condition,
-          conflict_key,
-          cursor_columns: cursor_columns
+      if overlapping_source_rows?(source_partition_name, where_condition)
+        materialize_partition_from_source!(
+          partition_name: partition_name,
+          source_partition_name: source_partition_name,
+          for_values_clause: for_values_clause,
+          where_condition: where_condition
         )
-      end
-
-      if Connection.partition_exists?(partition_name)
+      elsif Connection.partition_exists?(partition_name)
         attach_archive_partition!(table_name, partition_name, for_values_clause, where_condition)
       else
+        create_partition_or_materialize_from_default!(
+          partition_name: partition_name,
+          for_values_clause: for_values_clause,
+          where_condition: where_condition
+        )
+      end
+    end
+
+    def overlapping_source_rows?(source_partition_name, where_condition)
+      return false unless Connection.partition_exists?(source_partition_name)
+
+      Connection.count_rows_in_partition(source_partition_name, where_condition).positive?
+    end
+
+    def create_partition_or_materialize_from_default!(partition_name:, for_values_clause:, where_condition:)
+      with_statement_savepoint do
         @executor.create_partition(table_name, partition_name, for_values_clause)
+      end
+    rescue => error
+      raise unless check_violation?(error)
+
+      materialize_partition_from_source!(
+        partition_name: partition_name,
+        source_partition_name: default_partition_name(table_name),
+        for_values_clause: for_values_clause,
+        where_condition: where_condition
+      )
+    end
+
+    def materialize_partition_from_source!(partition_name:, source_partition_name:, for_values_clause:, where_condition:)
+      with_parent_write_lock do
+        @executor.ensure_detached_partition_table!(table_name, partition_name, conflict_key: conflict_key)
+        drain_overlapping_rows_into_partition!(
+          source_partition_name,
+          partition_name,
+          where_condition
+        )
+
+        default_name = default_partition_name(table_name)
+        if default_name != source_partition_name
+          drain_overlapping_rows_into_partition!(default_name, partition_name, where_condition)
+        end
+
+        @executor.attach_partition(table_name, partition_name, for_values_clause)
+      end
+    end
+
+    def drain_overlapping_rows_into_partition!(source_partition_name, partition_name, where_condition)
+      return unless Connection.partition_exists?(source_partition_name)
+      return unless Connection.count_rows_in_partition(source_partition_name, where_condition).positive?
+
+      @executor.drain_rows_between_partitions!(
+        source_partition_name,
+        partition_name,
+        where_condition,
+        conflict_key,
+        cursor_columns: cursor_columns
+      )
+    end
+
+    def with_parent_write_lock
+      lock_sql = "LOCK TABLE #{Connection.quoted_table(table_name)} IN SHARE ROW EXCLUSIVE MODE"
+
+      if connection.respond_to?(:transaction_open?) && connection.transaction_open?
+        connection.execute(lock_sql)
+        yield
+      else
+        connection.transaction do
+          connection.execute(lock_sql)
+          yield
+        end
+      end
+    end
+
+    def with_statement_savepoint
+      if connection.respond_to?(:transaction_open?) && connection.transaction_open?
+        connection.transaction(requires_new: true) { yield }
+      else
+        yield
       end
     end
 
     def attach_archive_partition!(table_name, partition_name, for_values_clause, where_condition)
-      @executor.attach_partition(table_name, partition_name, for_values_clause)
+      with_statement_savepoint do
+        @executor.attach_partition(table_name, partition_name, for_values_clause)
+      end
     rescue => error
       raise unless check_violation?(error)
 
-      default_name = default_partition_name(table_name)
-      if Connection.partition_exists?(default_name) &&
-          Connection.count_rows_in_partition(default_name, where_condition).positive?
-        @executor.drain_rows_between_partitions!(
-          default_name,
-          partition_name,
-          where_condition,
-          conflict_key,
-          cursor_columns: cursor_columns
-        )
-      end
-
-      @executor.attach_partition(table_name, partition_name, for_values_clause)
+      materialize_partition_from_source!(
+        partition_name: partition_name,
+        source_partition_name: default_partition_name(table_name),
+        for_values_clause: for_values_clause,
+        where_condition: where_condition
+      )
     end
 
     def check_violation?(error)
       message = error.message.to_s
       return true if message.include?("CheckViolation") || message.include?("check constraint")
+      return true if message.include?("updated partition constraint")
 
       error.cause && check_violation?(error.cause)
     end

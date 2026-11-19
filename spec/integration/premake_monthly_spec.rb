@@ -48,4 +48,44 @@ RSpec.describe "premake monthly maintenance", :integration do
       expect(partition_attached?(table_name, partition_name)).to be(true)
     end
   end
+
+  it "moves overlapping default rows into the new month child before attach" do
+    insert_row!(table_name, id: 1, occurred_on: Date.new(2026, 7, 15))
+    insert_row!(table_name, id: 2, occurred_on: Date.new(2026, 8, 2))
+
+    expect(count_rows(default_name(table_name))).to eq(2)
+
+    config = PartitionGardener::Registry.find_by_table_name(table_name)
+    expect {
+      PartitionGardener::PremakeMonthlyMaintenance.new(config).run!
+    }.not_to raise_error
+
+    july = month_partition_name(table_name, Date.new(2026, 7, 1))
+    august = month_partition_name(table_name, Date.new(2026, 8, 1))
+    september = month_partition_name(table_name, Date.new(2026, 9, 1))
+
+    expect(partition_attached?(table_name, july)).to be(true)
+    expect(partition_attached?(table_name, august)).to be(true)
+    expect(partition_attached?(table_name, september)).to be(true)
+    expect(count_rows(july)).to eq(1)
+    expect(count_rows(august)).to eq(1)
+    expect(count_rows(default_name(table_name))).to eq(0)
+    expect(count_rows(table_name, where: "id = 1")).to eq(1)
+    expect(count_rows(table_name, where: "id = 2")).to eq(1)
+  end
+
+  it "survives a second maintenance pass after default rows were already drained" do
+    insert_row!(table_name, id: 11, occurred_on: Date.new(2026, 7, 20))
+    config = PartitionGardener::Registry.find_by_table_name(table_name)
+
+    PartitionGardener::PremakeMonthlyMaintenance.new(config).run!
+    expect {
+      PartitionGardener::PremakeMonthlyMaintenance.new(config).run!
+    }.not_to raise_error
+
+    july = month_partition_name(table_name, Date.new(2026, 7, 1))
+    expect(partition_attached?(table_name, july)).to be(true)
+    expect(count_rows(july)).to eq(1)
+    expect(count_rows(default_name(table_name))).to eq(0)
+  end
 end

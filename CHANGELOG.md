@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix monthly premake so overlapping rows already in the default partition are moved into the new month child and attached under a parent write lock before create, instead of failing with a partition check violation
+
 ## 0.3.9 (2026-11-13)
 
 - Make Railtie, CLI, HotSwitchConcern, and Integer duration helpers opt-in requires instead of loading them from the default `partition_gardener` require; hosts that need Rails defaults must require `partition_gardener/railtie`, and hot-switch migrations must require `partition_gardener/migration/hot_switch_concern`

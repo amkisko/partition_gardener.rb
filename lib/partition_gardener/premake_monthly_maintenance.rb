@@ -24,13 +24,21 @@ module PartitionGardener
 
     def ensure_month_partition!(identifier)
       partition_name = @config[:partition_name_format].call(identifier)
-      for_values_clause = @config[:partition_definition].call(identifier)
-
       return if Connection.partition_attached?(table_name, partition_name)
 
+      default_name = default_partition_name(table_name)
+      if Connection.partition_exists?(default_name)
+        ensure_archive_partition_attached!(
+          identifier,
+          partition_name: partition_name,
+          source_partition_name: default_name
+        )
+        return
+      end
+
+      for_values_clause = @config[:partition_definition].call(identifier)
       if Connection.partition_exists?(partition_name)
-        send(
-          :attach_archive_partition!,
+        attach_archive_partition!(
           table_name,
           partition_name,
           for_values_clause,
